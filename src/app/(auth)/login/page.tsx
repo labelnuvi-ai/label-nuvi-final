@@ -40,7 +40,22 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        router.push("/account");
+
+        if (data.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", data.user.id)
+            .single();
+
+          if (profile?.role === "admin") {
+            router.push("/admin/dashboard");
+          } else {
+            router.push("/account");
+          }
+        } else {
+          router.push("/account");
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Authentication failed. Try again.");
