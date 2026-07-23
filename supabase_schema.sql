@@ -195,3 +195,16 @@ CREATE POLICY "Users can create their own order items" ON order_items
       WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()
     )
   );
+
+-- 9. Storage Bucket Setup
+-- Create product-images storage bucket if not exists
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('product-images', 'product-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies to allow public reads and authenticated uploads
+CREATE POLICY "Public read bucket" ON storage.objects
+  FOR SELECT USING (bucket_id = 'product-images');
+
+CREATE POLICY "Admin uploads to bucket" ON storage.objects
+  FOR ALL USING (bucket_id = 'product-images' AND auth.role() = 'authenticated');
