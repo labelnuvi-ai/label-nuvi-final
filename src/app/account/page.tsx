@@ -13,6 +13,7 @@ export default function AccountPage() {
   const wishlistIds = useWishlistStore((s) => s.wishlistIds);
 
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [ordersCount, setOrdersCount] = useState(0);
 
@@ -24,13 +25,20 @@ export default function AccountPage() {
       } else {
         setUser(user);
         try {
+          const { data: profData } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (profData) setProfile(profData);
+
           const { count } = await supabase
             .from("orders")
             .select("*", { count: "exact", head: true })
             .eq("user_id", user.id);
           setOrdersCount(count || 0);
         } catch (err) {
-          console.error("Error loading user orders count:", err);
+          console.error("Error loading user profile details:", err);
         }
       }
       setLoading(false);
@@ -53,7 +61,8 @@ export default function AccountPage() {
 
   if (!user) return null;
 
-  const userInitials = user.email ? user.email.slice(0, 2).toUpperCase() : "NU";
+  const displayName = profile?.full_name || user.user_metadata?.full_name || (user.email ? user.email.split("@")[0] : "Client");
+  const userInitials = displayName ? displayName.slice(0, 2).toUpperCase() : "NU";
 
   return (
     <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
@@ -67,9 +76,9 @@ export default function AccountPage() {
               LABEL NUVI ATELIER MEMBER
             </span>
             <h1 className="text-2xl sm:text-3xl font-serif font-bold uppercase tracking-wider text-neutral-900">
-              CLIENT MEMBER
+              Welcome back, {displayName}!!!
             </h1>
-            <p className="text-xs text-neutral-500 font-sans">{user.email}</p>
+            <p className="text-xs text-neutral-500 font-sans">{user.email}{profile?.phone ? ` • ${profile.phone}` : ""}</p>
           </div>
         </div>
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -11,6 +11,8 @@ export default function LoginPage() {
   const supabase = createClient();
 
   const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -30,9 +32,20 @@ export default function LoginPage() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              full_name: fullName,
+              phone: phone,
+            },
           },
         });
         if (error) throw error;
+        if (data.user) {
+          await supabase.from("profiles").upsert({
+            id: data.user.id,
+            full_name: fullName,
+            phone: phone,
+          });
+        }
         setSuccessMsg("Verification link sent. Please verify your email to activate.");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -146,6 +159,44 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleAuth} className="space-y-4">
+          {isSignUp && (
+            <>
+              <div>
+                <label className="text-[10px] font-label uppercase tracking-wider text-[#706C66] block mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2 stroke-[1.2]" />
+                  <input
+                    type="text"
+                    required={isSignUp}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Victoria Sterling"
+                    className="bg-[#FAF8F5] text-xs font-label pl-12 pr-4 py-4 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-[#1a1a1a]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-label uppercase tracking-wider text-[#706C66] block mb-2">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2 stroke-[1.2]" />
+                  <input
+                    type="tel"
+                    required={isSignUp}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="bg-[#FAF8F5] text-xs font-label pl-12 pr-4 py-4 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-[#1a1a1a]"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
           <div>
             <label className="text-[10px] font-label uppercase tracking-wider text-[#706C66] block mb-2">
               Email Address
