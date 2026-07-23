@@ -21,7 +21,7 @@ export function CustomerReviews() {
       role: "Verified Atelier Client",
       rating: 5,
       title: "Runway quality suiting",
-      text: "The Aura linen blazer fits like bespoke tailoring from Rue Saint-Honoré. Crisp shoulders, perfect wide-leg crease. UNI is my new go-to.",
+      text: "The Aura linen blazer fits like bespoke tailoring from Rue Saint-Honoré. Crisp shoulders, perfect wide-leg crease. LABEL NUVI is my new go-to.",
       product: "Aura Double-Breasted Suit",
     },
     {

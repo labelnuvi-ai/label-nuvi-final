@@ -40,13 +40,13 @@ export default function LoginPage() {
       <div className="hidden lg:block lg:col-span-6 relative rounded-[24px] overflow-hidden bg-neutral-900 min-h-[500px] shadow-luxury-lg">
         <Image
           src="/images/hero-portrait.jpg"
-          alt="UNI Atelier Paris"
+          alt="LABEL NUVI Atelier Paris"
           fill
           className="object-cover brightness-75"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent flex flex-col justify-end p-10 text-white space-y-2">
           <span className="text-[10px] font-label uppercase tracking-[0.3em] text-[#C8A46B] font-semibold">
-            UNI ATELIER
+            LABEL NUVI ATELIER
           </span>
           <h2 className="text-3xl font-serif-luxury font-light uppercase tracking-wider leading-none">
             CLIENT CONCIERGE
@@ -148,7 +148,7 @@ export default function LoginPage() {
         )}
 
         <div className="text-center text-xs text-neutral-500 pt-2 font-label">
-          New to UNI?{" "}
+          New to LABEL NUVI?{" "}
           <Link href="/login" className="text-black font-bold underline uppercase tracking-wider">
             Create account
           </Link>

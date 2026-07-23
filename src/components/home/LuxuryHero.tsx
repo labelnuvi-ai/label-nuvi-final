@@ -18,7 +18,7 @@ export function LuxuryHero() {
       >
         <Image
           src={CMS_HERO_DATA.backgroundImage}
-          alt="UNI Atelier Couture Hero"
+          alt="LABEL NUVI Atelier Couture Hero"
           fill
           priority
           className="object-cover object-center brightness-75"

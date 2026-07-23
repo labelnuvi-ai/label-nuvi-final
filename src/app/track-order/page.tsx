@@ -64,7 +64,7 @@ export default function TrackOrderPage({ searchParams }: TrackPageProps) {
           type="text"
           value={orderId}
           onChange={(e) => setOrderId(e.target.value)}
-          placeholder="ENTER ORDER NUMBER (e.g. UNI-98241)"
+          placeholder="ENTER ORDER NUMBER (e.g. NUVI-98241)"
           className="bg-[#FAF9F6] text-xs px-4 py-3 w-full rounded-2xl border border-neutral-300 focus:outline-none focus:border-black font-semibold uppercase tracking-wider"
         />
         <button

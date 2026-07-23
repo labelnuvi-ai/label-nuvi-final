@@ -11,7 +11,7 @@ interface SuccessPageProps {
 
 export default function OrderSuccessPage({ searchParams }: SuccessPageProps) {
   const { orderNumber } = use(searchParams);
-  const orderRef = orderNumber || "UNI-98241";
+  const orderRef = orderNumber || "NUVI-98241";
 
   useEffect(() => {
     // Fire festive luxury confetti on launch

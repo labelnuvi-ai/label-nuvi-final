@@ -203,7 +203,7 @@ export function CartDrawer() {
                         type="text"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
-                        placeholder="PROMO CODE (e.g. UNI15)"
+                        placeholder="PROMO CODE (e.g. NUVI15)"
                         className="bg-[#FAF8F5] text-xs font-label px-4 py-2.5 w-full rounded-l-full border border-neutral-300 focus:outline-none focus:border-black uppercase tracking-wider"
                       />
                       <button

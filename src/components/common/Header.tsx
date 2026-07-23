@@ -93,7 +93,7 @@ export function Header() {
           {/* Center Brandmark */}
           <Link href="/" className="text-center group">
             <span className="text-5xl font-serif-luxury tracking-[0.5em] text-[#1A1A1A] font-medium uppercase transition-transform duration-700 group-hover:scale-[1.02] block pl-[0.5em]">
-              UNI
+              LABEL NUVI
             </span>
           </Link>
 
@@ -168,7 +168,7 @@ export function Header() {
                 {/* Header */}
                 <div className="flex items-center justify-between pb-2">
                   <span className="text-2xl font-bold uppercase tracking-wider text-black font-serif-luxury">
-                    UNI
+                    LABEL NUVI
                   </span>
                   <button
                     onClick={() => setIsMobileNavOpen(false)}

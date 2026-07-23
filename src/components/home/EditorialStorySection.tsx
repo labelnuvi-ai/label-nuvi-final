@@ -51,7 +51,7 @@ export function EditorialStorySection() {
         >
           <Image
             src="/images/hero-portrait.jpg"
-            alt="UNI Atelier Couture Craftsmanship"
+            alt="LABEL NUVI Atelier Couture Craftsmanship"
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
             className="object-cover"

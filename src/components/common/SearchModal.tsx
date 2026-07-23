@@ -46,7 +46,7 @@ export function SearchModal() {
             <div className="max-w-4xl mx-auto space-y-6">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-serif tracking-[0.3em] font-bold uppercase text-neutral-900">
-                  SEARCH UNI ATELIER
+                  SEARCH LABEL NUVI ATELIER
                 </span>
                 <button
                   onClick={closeSearch}

@@ -16,7 +16,7 @@ export default function AccountPage() {
         </div>
         <div>
           <span className="text-[11px] uppercase tracking-[0.3em] text-neutral-400 font-semibold block">
-            UNI ATELIER MEMBER
+            LABEL NUVI ATELIER MEMBER
           </span>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold uppercase tracking-wider text-neutral-900">
             VICTORIA STERLING

@@ -19,13 +19,13 @@ export function InstagramStyleGallery() {
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center space-x-2 text-[#C8A46B]">
             <Camera className="w-4 h-4 stroke-[1.2]" />
-            <span className="text-[10px] font-label uppercase tracking-[0.3em] font-medium">@UNI.HAUTECOUTURE</span>
+            <span className="text-[10px] font-label uppercase tracking-[0.3em] font-medium">@LABELNUVI.OFFICIAL</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-serif-luxury font-light uppercase tracking-[0.08em] text-[#FAF8F5]">
             AS SEEN ON FASHION ICONS
           </h2>
           <p className="text-xs text-neutral-400 font-label tracking-[0.25em] uppercase font-light">
-            TAG #UNIATELIER TO BE FEATURED ON OUR GLOBAL EDITORIAL GRID
+            TAG #LABELNUVI TO BE FEATURED ON OUR GLOBAL EDITORIAL GRID
           </p>
         </div>
 

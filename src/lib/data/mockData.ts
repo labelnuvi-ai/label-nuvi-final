@@ -247,7 +247,7 @@ export const PRODUCTS: Product[] = [
 
 export const MOCK_COUPONS: Coupon[] = [
   {
-    code: "UNI15",
+    code: "NUVI15",
     discountPercent: 15,
     description: "15% off your first luxury order",
   },
@@ -278,7 +278,7 @@ export const MOCK_ADDRESSES: UserAddress[] = [
 export const MOCK_ORDERS: Order[] = [
   {
     id: "ord-1001",
-    orderNumber: "UNI-98241",
+    orderNumber: "NUVI-98241",
     date: "2026-07-18",
     status: "Shipped",
     subtotal: 980,

@@ -30,7 +30,7 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
     setTimeout(() => {
       clearCart();
-      router.push("/checkout/success?orderNumber=UNI-" + Math.floor(10000 + Math.random() * 90000));
+      router.push("/checkout/success?orderNumber=NUVI-" + Math.floor(10000 + Math.random() * 90000));
     }, 1500);
   };
 

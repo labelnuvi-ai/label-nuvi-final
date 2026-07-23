@@ -40,7 +40,7 @@ export function SizeGuideModal() {
               <div className="flex items-center space-x-2">
                 <Ruler className="w-5 h-5 text-black stroke-[1.5]" />
                 <h3 className="text-sm font-serif tracking-[0.2em] font-bold uppercase text-neutral-900">
-                  UNI ATELIER SIZE GUIDE
+                  LABEL NUVI ATELIER SIZE GUIDE
                 </h3>
               </div>
               <button onClick={closeSizeGuide} className="text-neutral-500 hover:text-black">

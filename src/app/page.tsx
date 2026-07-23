@@ -38,7 +38,7 @@ export default function HomePage() {
       <section className="relative w-full h-[85vh] min-h-[500px] bg-neutral-900 overflow-hidden">
         <Image
           src="/images/hero-portrait.jpg"
-          alt="UNI Couple Campaign"
+          alt="LABEL NUVI Couple Campaign"
           fill
           priority
           className="object-cover object-center brightness-90"

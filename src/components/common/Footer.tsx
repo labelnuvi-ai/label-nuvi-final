@@ -106,7 +106,7 @@ export function Footer() {
 
         {/* Copyright */}
         <div className="text-[10px] text-neutral-400 font-label tracking-widest text-center pt-4 border-t border-neutral-100 uppercase">
-          &copy; {new Date().getFullYear()} UNI ATELIER.
+          &copy; {new Date().getFullYear()} LABEL NUVI ATELIER.
         </div>
       </div>
     </footer>

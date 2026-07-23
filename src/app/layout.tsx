@@ -30,11 +30,12 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "UNI | Haute Couture & High Fashion Atelier",
+  title: "LABEL NUVI | Haute Couture & High Fashion Atelier",
   description:
-    "Explore UNI Atelier Paris & New York. Refined haute couture evening gowns, tailored power suiting, sculpt bodysuits, and cashmere outerwear engineered for modern luxury icons.",
+    "Explore LABEL NUVI Atelier Paris & New York. Refined haute couture evening gowns, tailored power suiting, sculpt bodysuits, and cashmere outerwear engineered for modern luxury icons.",
   keywords: [
-    "UNI Fashion",
+    "LABEL NUVI",
+    "LABEL NUVI Fashion",
     "Haute Couture",
     "Luxury Women's Atelier",
     "Syncopate Luxury",
