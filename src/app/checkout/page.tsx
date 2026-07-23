@@ -25,13 +25,60 @@ export default function CheckoutPage() {
   const shipping = getShippingFee();
   const total = getTotal();
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      clearCart();
-      router.push("/checkout/success?orderNumber=NUVI-" + Math.floor(10000 + Math.random() * 90000));
-    }, 1500);
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const { createOrderDb } = await import("@/lib/supabase/db");
+      
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const orderNumber = "NUVI-" + Math.floor(10000 + Math.random() * 90000);
+      const newOrder = {
+        orderNumber,
+        date: new Date().toISOString().split("T")[0],
+        status: "Processing",
+        subtotal,
+        discount,
+        shipping,
+        total,
+        trackingNumber: null,
+        paymentMethod: paymentMethod === "stripe" ? "Stripe / Card" : paymentMethod === "razorpay" ? "Razorpay / UPI" : "Cash on Delivery",
+        shippingAddress: {
+          id: "addr-temp",
+          label: "Shipping Address",
+          fullName,
+          addressLine1: address,
+          addressLine2: "",
+          city,
+          state: "NY",
+          postalCode,
+          country: "United States",
+          phone: "+1 (212) 555-0198",
+          isDefault: true,
+        },
+        items: items.map((item, idx) => ({
+          id: `oi-${idx}`,
+          productId: item.product.id,
+          productName: item.product.name,
+          productImage: item.product.images[0] || "/images/product-dress-front.jpg",
+          color: item.selectedColor.name,
+          size: item.selectedSize,
+          unitPrice: item.product.salePrice || item.product.price,
+          quantity: item.quantity,
+        })),
+      };
+
+      await createOrderDb(user ? user.id : null, newOrder as any);
+      await clearCart();
+      router.push("/checkout/success?orderNumber=" + orderNumber);
+    } catch (err: any) {
+      alert("Checkout placement failed: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (items.length === 0) {

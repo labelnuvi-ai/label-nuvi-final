@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { CartItem, Product, ProductColor, ProductSize, Coupon } from "@/types";
 import { MOCK_COUPONS } from "@/lib/data/mockData";
+import { fetchCartDb, syncCartDb } from "@/lib/supabase/db";
 
 interface CartState {
   items: CartItem[];
@@ -10,12 +11,13 @@ interface CartState {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
-  addItem: (product: Product, color: ProductColor, size: ProductSize, quantity?: number) => void;
-  removeItem: (itemId: string) => void;
-  updateQuantity: (itemId: string, quantity: number) => void;
+  addItem: (product: Product, color: ProductColor, size: ProductSize, quantity?: number) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  syncCart: (userId: string) => Promise<void>;
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
-  clearCart: () => void;
+  clearCart: () => Promise<void>;
   getSubtotal: () => number;
   getDiscountAmount: () => number;
   getShippingFee: () => number;
@@ -26,33 +28,7 @@ interface CartState {
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
-      items: [
-        {
-          id: "cart-item-1",
-          product: {
-            id: "prod-1",
-            name: "Soren Cowl Satin Midi Dress",
-            slug: "soren-cowl-satin-midi-dress",
-            subtitle: "Liquid Silk Draped Floor-Length Gown",
-            description: "",
-            details: [],
-            fabricCare: [],
-            price: 490,
-            salePrice: 420,
-            images: ["/images/product-dress-front.jpg"],
-            colors: [{ name: "Champagne Satin", hex: "#E6D5C3" }],
-            sizes: ["S"],
-            categoryId: "cat-1",
-            categoryName: "Couture Dresses",
-            rating: 4.9,
-            reviewsCount: 38,
-            createdAt: "",
-          },
-          selectedColor: { name: "Champagne Satin", hex: "#E6D5C3" },
-          selectedSize: "S",
-          quantity: 1,
-        },
-      ],
+      items: [],
       appliedCoupon: null,
       isOpen: false,
 
@@ -60,7 +36,7 @@ export const useCartStore = create<CartState>()(
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
 
-      addItem: (product, color, size, quantity = 1) => {
+      addItem: async (product, color, size, quantity = 1) => {
         const currentItems = get().items;
         const existingIndex = currentItems.findIndex(
           (item) =>
@@ -69,10 +45,10 @@ export const useCartStore = create<CartState>()(
             item.selectedSize === size
         );
 
+        let updatedItems = [...currentItems];
+
         if (existingIndex > -1) {
-          const updatedItems = [...currentItems];
           updatedItems[existingIndex].quantity += quantity;
-          set({ items: updatedItems, isOpen: true });
         } else {
           const newItem: CartItem = {
             id: `${product.id}-${color.name}-${size}-${Date.now()}`,
@@ -81,22 +57,67 @@ export const useCartStore = create<CartState>()(
             selectedSize: size,
             quantity,
           };
-          set({ items: [...currentItems, newItem], isOpen: true });
+          updatedItems.push(newItem);
+        }
+
+        set({ items: updatedItems, isOpen: true });
+
+        try {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await syncCartDb(user.id, updatedItems);
+          }
+        } catch (err) {
+          console.error("Failed to sync cart item addition with Supabase database:", err);
         }
       },
 
-      removeItem: (itemId) => {
-        set({ items: get().items.filter((i) => i.id !== itemId) });
+      removeItem: async (itemId) => {
+        const updatedItems = get().items.filter((i) => i.id !== itemId);
+        set({ items: updatedItems });
+
+        try {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await syncCartDb(user.id, updatedItems);
+          }
+        } catch (err) {
+          console.error("Failed to sync cart item removal with Supabase database:", err);
+        }
       },
 
-      updateQuantity: (itemId, quantity) => {
+      updateQuantity: async (itemId, quantity) => {
         if (quantity <= 0) {
-          get().removeItem(itemId);
+          await get().removeItem(itemId);
           return;
         }
-        set({
-          items: get().items.map((i) => (i.id === itemId ? { ...i, quantity } : i)),
-        });
+
+        const updatedItems = get().items.map((i) => (i.id === itemId ? { ...i, quantity } : i));
+        set({ items: updatedItems });
+
+        try {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await syncCartDb(user.id, updatedItems);
+          }
+        } catch (err) {
+          console.error("Failed to sync cart item quantity update with Supabase database:", err);
+        }
+      },
+
+      syncCart: async (userId) => {
+        try {
+          const dbItems = await fetchCartDb(userId);
+          set({ items: dbItems });
+        } catch (err) {
+          console.error("Failed to sync cart with Supabase database:", err);
+        }
       },
 
       applyCoupon: (code) => {
@@ -118,7 +139,19 @@ export const useCartStore = create<CartState>()(
 
       removeCoupon: () => set({ appliedCoupon: null }),
 
-      clearCart: () => set({ items: [], appliedCoupon: null }),
+      clearCart: async () => {
+        set({ items: [], appliedCoupon: null });
+        try {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await syncCartDb(user.id, []);
+          }
+        } catch (err) {
+          console.error("Failed to clear cart database rows during checkout:", err);
+        }
+      },
 
       getSubtotal: () => {
         return get().items.reduce((sum, item) => {

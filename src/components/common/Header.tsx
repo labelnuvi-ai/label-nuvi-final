@@ -29,6 +29,9 @@ export function Header() {
   const wishlistIds = useWishlistStore((s) => s.wishlistIds);
   const openSearch = useSearchStore((s) => s.openSearch);
 
+  const syncWishlist = useWishlistStore((s) => s.syncWishlist);
+  const syncCart = useCartStore((s) => s.syncCart);
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -36,6 +39,19 @@ export function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const syncSessionData = async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        syncWishlist(user.id);
+        syncCart(user.id);
+      }
+    };
+    syncSessionData();
+  }, [syncWishlist, syncCart]);
 
   useEffect(() => {
     setIsMobileNavOpen(false);
