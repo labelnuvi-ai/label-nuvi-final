@@ -5,15 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ShoppingBag, Eye, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PRODUCTS } from "@/lib/data/mockData";
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useQuickViewStore } from "@/store/useQuickViewStore";
+import { useProducts } from "@/hooks/useProducts";
 
 export default function HomePage() {
   const addItem = useCartStore((s) => s.addItem);
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const openQuickView = useQuickViewStore((s) => s.openQuickView);
+  const { products } = useProducts();
 
   // Active slide state for the Joggers Campaign Carousel
   const [[joggerSlide, direction], setJoggerSlide] = useState([0, 0]);
@@ -32,9 +33,24 @@ export default function HomePage() {
     setJoggerSlide(([prev]) => [(prev - 1 + joggersImages.length) % joggersImages.length, -1]);
   };
 
+  const sliderVariants = {
+    enter: (dir: number) => ({
+      x: dir > 0 ? 1000 : -1000,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (dir: number) => ({
+      x: dir < 0 ? 1000 : -1000,
+      opacity: 0,
+    }),
+  };
+
   return (
     <div className="space-y-16 pb-20">
-      {/* 1. Hero Campaign Banner (Screenshot 5 Style) */}
+      {/* 1. Hero Campaign Banner */}
       <section className="relative w-full h-[85vh] min-h-[500px] bg-neutral-900 overflow-hidden">
         <Image
           src="/images/hero-portrait.jpg"
@@ -48,18 +64,21 @@ export default function HomePage() {
         {/* Floating Campaign Headline & CTA */}
         <div className="absolute bottom-16 left-6 sm:left-12 text-white space-y-4">
           <h1 className="text-3xl sm:text-5xl font-serif-luxury tracking-wider uppercase">
-            THE ATELIER SUIT
+            ATELIER DROP &apos;26
           </h1>
+          <p className="text-xs uppercase tracking-widest text-[#E6D5C3]">
+            Runway drops engineered for raw confidence.
+          </p>
           <Link
             href="/shop"
-            className="inline-block bg-[#1A1A1A] hover:bg-[#C8A46B] text-white text-[11px] font-label uppercase tracking-widest px-8 py-3.5 transition-all duration-300 shadow-lg"
+            className="inline-block bg-white text-black text-xs font-label uppercase tracking-widest px-8 py-4 font-semibold hover:bg-[#C8A46B] hover:text-white transition-all shadow-lg rounded-full"
           >
-            SHOP NOW
+            DISCOVER CATALOGUE
           </Link>
         </div>
       </section>
 
-      {/* 2. Latest Drop Section (Screenshot 5 Style) */}
+      {/* 2. Latest Drop Section */}
       <section className="max-w-7xl mx-auto px-6 lg:px-12 space-y-6">
         <div className="flex justify-between items-end border-b border-neutral-200 pb-3">
           <h2 className="text-xl sm:text-2xl font-serif-luxury tracking-wide text-black uppercase font-medium">
@@ -74,7 +93,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {PRODUCTS.slice(0, 4).map((product) => {
+          {products.slice(0, 4).map((product) => {
             const isLiked = isInWishlist(product.id);
             return (
               <div key={product.id} className="group relative flex flex-col bg-white rounded-lg overflow-hidden border border-neutral-200/40">
@@ -94,191 +113,123 @@ export default function HomePage() {
                   >
                     <Heart className={`w-3.5 h-3.5 ${isLiked ? "fill-black" : ""}`} />
                   </button>
-                </div>
-                <div className="p-3 flex justify-between items-start gap-2">
-                  <div className="min-w-0">
-                    <Link href={`/product/${product.slug}`} className="block truncate text-xs font-bold uppercase text-black tracking-wide">
-                      {product.name}
-                    </Link>
-                    <span className="text-[11px] font-label font-semibold text-neutral-800 block mt-0.5">
-                      ${(product.salePrice || product.price).toFixed(2)}
-                    </span>
+                  <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                    <button
+                      onClick={() => openQuickView(product)}
+                      className="p-3 bg-white rounded-full text-black hover:bg-neutral-100 shadow-lg"
+                      title="Quick View"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => addItem(product, product.colors[0], "S", 1)}
+                      className="p-3 bg-white rounded-full text-black hover:bg-neutral-100 shadow-lg"
+                      title="Add to Cart"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => addItem(product, product.colors[0], "S", 1)}
-                    className="p-1 text-neutral-700 hover:text-black"
-                    aria-label="Add to cart"
-                  >
-                    <ShoppingBag className="w-4 h-4 stroke-[1.5]" />
-                  </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 3. Joggers Campaign Slider (Screenshot 3 Style) */}
-      <section className="max-w-xl mx-auto px-6 space-y-6">
-        <div className="flex justify-between items-end border-b border-neutral-200 pb-3">
-          <h2 className="text-xl sm:text-2xl font-serif-luxury tracking-wide text-black uppercase font-medium">
-            ATELIER JOGGERS
-          </h2>
-        </div>
-
-        <div className="relative aspect-[4/5] bg-neutral-100 rounded-lg overflow-hidden shadow-md">
-          <AnimatePresence initial={false} custom={direction}>
-            <motion.div
-              key={joggerSlide}
-              custom={direction}
-              variants={{
-                enter: (dir: number) => ({
-                  x: dir > 0 ? "100%" : "-100%",
-                  opacity: 0,
-                }),
-                center: {
-                  x: 0,
-                  opacity: 1,
-                },
-                exit: (dir: number) => ({
-                  x: dir < 0 ? "100%" : "-100%",
-                  opacity: 0,
-                }),
-              }}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0 w-full h-full"
-            >
-              <Image
-                src={joggersImages[joggerSlide]}
-                alt="Joggers Campaign"
-                fill
-                className="object-cover"
-              />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Carousel Pagination Controls */}
-        <div className="flex items-center justify-center space-x-6 text-xs font-label">
-          <button onClick={handlePrevJogger} className="p-1 hover:text-neutral-500">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span>
-            {joggerSlide + 1} / {joggersImages.length}
-          </span>
-          <button onClick={handleNextJogger} className="p-1 hover:text-neutral-500">
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="text-center pt-2">
-          <Link
-            href="/shop"
-            className="inline-block bg-[#1A1A1A] hover:bg-neutral-800 text-white text-[11px] font-label uppercase tracking-widest px-10 py-3.5 rounded-none"
-          >
-            View all
-          </Link>
-        </div>
-      </section>
-
-      {/* 4. Video Reels Preview Grid (Screenshot 4 Style) */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-12 space-y-6">
-        <div className="flex justify-between items-end border-b border-neutral-200 pb-3">
-          <h2 className="text-xl sm:text-2xl font-serif-luxury tracking-wide text-black uppercase font-medium">
-            CAMPAIGN CONTEXT
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
-          <div className="relative aspect-[3/4] bg-neutral-900 rounded-lg overflow-hidden group">
-            <Image
-              src="/images/product-dress-front.jpg"
-              alt="Runway Reel 1"
-              fill
-              className="object-cover brightness-95 group-hover:scale-105 transition-transform"
-            />
-            <div className="absolute bottom-4 left-4 text-white">
-              <span className="text-[10px] font-label uppercase tracking-widest bg-black/60 px-2 py-0.5 rounded">
-                COUTURE SHOTS
-              </span>
-            </div>
-          </div>
-          <div className="relative aspect-[3/4] bg-neutral-900 rounded-lg overflow-hidden group">
-            <Image
-              src="/images/product-suit-front.jpg"
-              alt="Runway Reel 2"
-              fill
-              className="object-cover brightness-95 group-hover:scale-105 transition-transform"
-            />
-            <div className="absolute bottom-4 left-4 text-white">
-              <span className="text-[10px] font-label uppercase tracking-widest bg-black/60 px-2 py-0.5 rounded">
-                RUNWAY BACKSTAGE
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Duo Drop / Ombres (Screenshot 4 Style - Product Card Add To Cart Bar) */}
-      <section className="max-w-7xl mx-auto px-6 lg:px-12 space-y-6">
-        <div className="flex justify-between items-end border-b border-neutral-200 pb-3">
-          <h2 className="text-xl sm:text-2xl font-serif-luxury tracking-wide text-black uppercase font-medium">
-            OMBRES COLLECTION
-          </h2>
-          <Link
-            href="/shop"
-            className="text-[10px] font-label uppercase tracking-wider text-black border border-neutral-300 px-3 py-1.5 hover:bg-neutral-100 transition-colors shrink-0"
-          >
-            VIEW ALL
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {PRODUCTS.slice(2, 4).map((product) => {
-            const isLiked = isInWishlist(product.id);
-            return (
-              <div key={product.id} className="group relative flex flex-col bg-white rounded-lg overflow-hidden border border-neutral-200/40">
-                <div className="relative aspect-[4/5] bg-[#FAF8F5] overflow-hidden">
-                  <Link href={`/product/${product.slug}`}>
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-500"
-                    />
-                  </Link>
-                  <button
-                    onClick={() => toggleWishlist(product.id)}
-                    className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center text-black"
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${isLiked ? "fill-black" : ""}`} />
-                  </button>
-                </div>
-                <div className="p-3 pb-0 space-y-1">
-                  <Link href={`/product/${product.slug}`} className="block truncate text-xs font-bold uppercase text-black tracking-wide">
+                <div className="p-3.5 bg-white space-y-1">
+                  <span className="text-[9px] text-[#C8A46B] uppercase font-semibold">{product.categoryName}</span>
+                  <Link href={`/product/${product.slug}`} className="block text-xs font-bold uppercase truncate tracking-wide text-neutral-800 hover:text-black">
                     {product.name}
                   </Link>
-                  <span className="text-[11px] font-label font-semibold text-neutral-800 block">
-                    ${(product.salePrice || product.price).toFixed(2)}
-                  </span>
-                </div>
-                {/* Athmania style bottom add to cart bar */}
-                <div className="p-3 pt-2">
-                  <button
-                    onClick={() => addItem(product, product.colors[0], "S", 1)}
-                    className="w-full bg-[#1A1A1A] hover:bg-[#C8A46B] text-white text-[9px] font-label uppercase tracking-widest py-2.5 transition-colors"
-                  >
-                    Add to Cart
-                  </button>
+                  <div className="text-xs font-semibold text-neutral-900">${(product.salePrice || product.price).toFixed(2)}</div>
                 </div>
               </div>
             );
           })}
         </div>
+      </section>
+
+      {/* 3. Infinite Joggers Campaign Slider */}
+      <section className="bg-[#1A1A1A] py-20 text-[#FAF8F5] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="lg:col-span-5 space-y-6">
+            <span className="text-[10px] font-label text-[#C8A46B] uppercase tracking-[0.25em] font-semibold block">
+              COUTURE COMFORT &bull; RESORT 26
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-serif-luxury font-light uppercase tracking-wider leading-none">
+              THE SILK JOGGER
+            </h2>
+            <p className="text-xs text-neutral-400 font-sans font-light leading-relaxed max-w-sm">
+              Tailored comfort. Fluid mulberry silk satins drape into structured ribbed cuffs, bridging raw activewear elements with high luxury craftsmanship.
+            </p>
+            <div className="flex space-x-3 pt-4">
+              <button
+                onClick={handlePrevJogger}
+                className="w-10 h-10 border border-neutral-600 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleNextJogger}
+                className="w-10 h-10 border border-neutral-600 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="lg:col-span-7 relative aspect-[16/10] bg-neutral-800 rounded-3xl overflow-hidden shadow-2xl">
+            <AnimatePresence initial={false} custom={direction}>
+              <motion.div
+                key={joggerSlide}
+                custom={direction}
+                variants={sliderVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ x: { type: "spring", stiffness: 300, damping: 30 } as const, opacity: { duration: 0.2 } }}
+                className="absolute inset-0 w-full h-full"
+              >
+                <Image
+                  src={joggersImages[joggerSlide]}
+                  alt="Silk Joggers Lookbook Campaign"
+                  fill
+                  className="object-cover"
+                />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Secondary Feature Story Grid */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
+        {products.slice(2, 4).map((product) => {
+          const isLiked = isInWishlist(product.id);
+          return (
+            <div key={product.id} className="group relative flex flex-col bg-white rounded-2xl overflow-hidden border border-neutral-200/50">
+              <div className="relative aspect-[16/10] bg-[#FAF8F5] overflow-hidden">
+                <Link href={`/product/${product.slug}`}>
+                  <Image
+                    src={product.images[0]}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-103"
+                  />
+                </Link>
+                <button
+                  onClick={() => toggleWishlist(product.id)}
+                  className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center text-black"
+                >
+                  <Heart className={`w-4 h-4 ${isLiked ? "fill-black" : ""}`} />
+                </button>
+              </div>
+              <div className="p-6 bg-white space-y-2">
+                <span className="text-[9px] text-[#C8A46B] uppercase font-semibold">{product.categoryName}</span>
+                <Link href={`/product/${product.slug}`} className="block text-lg font-serif-luxury font-medium uppercase truncate tracking-wide text-neutral-800 hover:text-black">
+                  {product.name}
+                </Link>
+                <p className="text-xs text-neutral-500 line-clamp-2">{product.subtitle}</p>
+                <div className="text-sm font-bold text-neutral-900 pt-2">${(product.salePrice || product.price).toFixed(2)}</div>
+              </div>
+            </div>
+          );
+        })}
       </section>
     </div>
   );

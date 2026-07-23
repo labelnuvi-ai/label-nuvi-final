@@ -6,21 +6,22 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, ArrowRight } from "lucide-react";
 import { useSearchStore } from "@/store/useSearchStore";
-import { PRODUCTS } from "@/lib/data/mockData";
+import { useProducts } from "@/hooks/useProducts";
 
 export function SearchModal() {
   const { isSearchOpen, closeSearch, query, setQuery } = useSearchStore();
+  const { products } = useProducts();
 
   const filteredProducts = useMemo(() => {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
-    return PRODUCTS.filter(
+    return products.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.categoryName.toLowerCase().includes(q) ||
         p.subtitle.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [products, query]);
 
   const trendingQueries = ["Satin Gown", "Linen Blazer", "Corset Bodysuit", "Cashmere Trench"];
 
@@ -58,90 +59,65 @@ export function SearchModal() {
 
               {/* Input Bar */}
               <div className="relative border-b-2 border-neutral-900 pb-2 flex items-center">
-                <Search className="w-6 h-6 text-neutral-400 mr-3 stroke-[1.5]" />
+                <Search className="w-5 h-5 text-neutral-400 mr-3 stroke-[1.5]" />
                 <input
                   type="text"
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Type to search gowns, suiting, outerwears..."
-                  className="bg-transparent text-lg md:text-2xl font-serif text-neutral-900 w-full focus:outline-none placeholder:text-neutral-400 placeholder:font-sans"
+                  placeholder="SEARCH FOR SILHOUETTES, SATINS, BLAZERS..."
+                  className="bg-transparent text-sm md:text-base font-label text-neutral-900 uppercase tracking-widest placeholder-neutral-400 outline-none w-full"
                 />
-                {query && (
-                  <button
-                    onClick={() => setQuery("")}
-                    className="text-xs uppercase tracking-widest text-neutral-400 hover:text-black"
-                  >
-                    Clear
-                  </button>
-                )}
               </div>
 
-              {/* Trending suggestions when query empty */}
-              {!query && (
-                <div className="space-y-3">
-                  <h4 className="text-[11px] uppercase tracking-widest text-neutral-400 font-semibold">
+              {/* Result List or Trending Search recommendations */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pt-4">
+                {/* Left: Search Results */}
+                <div className="md:col-span-8 space-y-4 max-h-[350px] overflow-y-auto pr-4 no-scrollbar">
+                  {query.trim() !== "" && filteredProducts.length === 0 && (
+                    <div className="text-xs font-label uppercase tracking-wider text-neutral-400 py-4">
+                      No silhouettes found matching your search.
+                    </div>
+                  )}
+
+                  {filteredProducts.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/product/${p.slug}`}
+                      onClick={closeSearch}
+                      className="flex items-center space-x-4 p-2 rounded-2xl hover:bg-neutral-100/60 transition-all border border-transparent hover:border-neutral-200/50"
+                    >
+                      <div className="relative w-12 h-16 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/20 shrink-0">
+                        <Image src={p.images[0]} alt={p.name} fill className="object-cover" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <h4 className="font-bold text-neutral-950 uppercase">{p.name}</h4>
+                        <p className="text-neutral-400 text-[10px] uppercase">{p.categoryName}</p>
+                      </div>
+                      <span className="font-bold text-neutral-900 text-xs">${(p.salePrice || p.price).toFixed(2)}</span>
+                      <ArrowRight className="w-4 h-4 text-neutral-400 stroke-[1.2]" />
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Right: Trending Searches suggestions */}
+                <div className="md:col-span-4 space-y-3.5 border-l border-neutral-200/60 pl-0 md:pl-8">
+                  <h5 className="text-[10px] font-label uppercase tracking-widest text-neutral-400 font-bold">
                     TRENDING SEARCHES
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {trendingQueries.map((item) => (
+                  </h5>
+                  <div className="flex flex-col space-y-2.5 text-xs text-neutral-800 font-semibold font-label">
+                    {trendingQueries.map((term) => (
                       <button
-                        key={item}
-                        onClick={() => setQuery(item)}
-                        className="text-xs bg-neutral-200/60 hover:bg-neutral-900 hover:text-white px-3 py-1.5 rounded-full transition-colors uppercase tracking-wider text-neutral-700"
+                        key={term}
+                        onClick={() => setQuery(term)}
+                        className="text-left hover:text-[#C8A46B] transition-colors uppercase tracking-wider"
                       >
-                        {item}
+                        {term}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
-
-              {/* Results Grid */}
-              {query && (
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto pt-2">
-                  <h4 className="text-[11px] uppercase tracking-widest text-neutral-400 font-semibold">
-                    SEARCH RESULTS ({filteredProducts.length})
-                  </h4>
-
-                  {filteredProducts.length === 0 ? (
-                    <div className="py-8 text-center text-sm text-neutral-500 uppercase tracking-widest">
-                      No couture pieces match your query "{query}"
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {filteredProducts.map((product) => (
-                        <Link
-                          key={product.id}
-                          href={`/product/${product.slug}`}
-                          onClick={closeSearch}
-                          className="group flex space-x-3 p-2 rounded-lg hover:bg-white transition-colors border border-transparent hover:border-neutral-200"
-                        >
-                          <div className="relative w-16 h-20 bg-neutral-100 shrink-0 overflow-hidden rounded-md">
-                            <Image
-                              src={product.images[0]}
-                              alt={product.name}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform"
-                            />
-                          </div>
-                          <div className="flex-1 flex flex-col justify-center">
-                            <h5 className="text-xs font-semibold text-neutral-900 group-hover:text-black line-clamp-1">
-                              {product.name}
-                            </h5>
-                            <p className="text-[11px] text-neutral-500 uppercase tracking-wider">
-                              {product.categoryName}
-                            </p>
-                            <p className="text-xs font-bold text-neutral-900 mt-1">
-                              ${(product.salePrice || product.price).toFixed(2)}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              </div>
             </div>
           </motion.div>
         </>

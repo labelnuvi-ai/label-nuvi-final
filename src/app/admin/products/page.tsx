@@ -1,16 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Sliders, Plus, Trash2, ArrowLeft, X, Tag } from "lucide-react";
-import { PRODUCTS, CATEGORIES } from "@/lib/data/mockData";
+import { CATEGORIES } from "@/lib/data/mockData";
 import { Product, Category } from "@/types";
+import { createClient } from "@/lib/supabase/client";
+import { useProducts } from "@/hooks/useProducts";
 
 export default function AdminProductsPage() {
-  const [productsList, setProductsList] = useState<Product[]>(PRODUCTS);
+  const router = useRouter();
+  const supabase = createClient();
+  const { products, loading: productsLoading, addProduct, deleteProduct } = useProducts();
+
   const [categoriesList, setCategoriesList] = useState<Category[]>(CATEGORIES);
-  
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
   // Modals state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -43,6 +51,19 @@ export default function AdminProductsPage() {
     { label: "Outerwear (black)", value: "/images/editorial-banner.jpg" },
   ];
 
+  useEffect(() => {
+    const verifyAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+      } else {
+        setUser(user);
+      }
+      setLoading(false);
+    };
+    verifyAdmin();
+  }, []);
+
   const handleSizeToggle = (size: string) => {
     if (selectedSizes.includes(size)) {
       setSelectedSizes(selectedSizes.filter((s) => s !== size));
@@ -51,44 +72,42 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleAddProductSubmit = (e: React.FormEvent) => {
+  const handleAddProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !price) return;
 
     const matchedCat = categoriesList.find((c) => c.id === selectedCategoryId);
 
-    const newProd: Product = {
-      id: "prod-" + (productsList.length + 1),
-      name,
-      slug: name.toLowerCase().replace(/ /g, "-"),
-      subtitle: subtitle || "Premium Collection Item",
-      description: description || "Crafted from fine fibers for ultimate silhouette structure.",
-      price: Number(price),
-      categoryId: selectedCategoryId,
-      categoryName: matchedCat ? matchedCat.name : "Dresses",
-      images: [imageUrl, "/images/product-dress-back.jpg"],
-      colors: [
-        { name: "Ivory", hex: "#FAF8F5" },
-        { name: "Atelier Gold", hex: "#C8A46B" },
-      ],
-      sizes: selectedSizes.length > 0 ? (selectedSizes as any) : ["S", "M"],
-      rating: 4.8,
-      reviewsCount: 1,
-      isNew: true,
-      details: ["Dry clean only", "Made in France"],
-      fabricCare: ["Dry clean only", "Cool iron reverse"],
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      await addProduct({
+        name,
+        slug: name.toLowerCase().replace(/ /g, "-"),
+        subtitle: subtitle || "Premium Collection Item",
+        description: description || "Crafted from fine fibers for ultimate silhouette structure.",
+        price: Number(price),
+        categoryId: selectedCategoryId,
+        categoryName: matchedCat ? matchedCat.name : "Dresses",
+        images: [imageUrl, "/images/product-dress-back.jpg"],
+        colors: [
+          { name: "Ivory", hex: "#FAF8F5" },
+          { name: "Atelier Gold", hex: "#C8A46B" },
+        ],
+        sizes: selectedSizes.length > 0 ? (selectedSizes as any) : ["S", "M"],
+        details: ["Dry clean only", "Made in France"],
+        fabricCare: ["Dry clean only", "Cool iron reverse"],
+      });
 
-    setProductsList([newProd, ...productsList]);
-    setIsProductModalOpen(false);
+      setIsProductModalOpen(false);
 
-    // Reset Form
-    setName("");
-    setPrice("");
-    setSubtitle("");
-    setDescription("");
-    setSelectedSizes(["S", "M"]);
+      // Reset Form
+      setName("");
+      setPrice("");
+      setSubtitle("");
+      setDescription("");
+      setSelectedSizes(["S", "M"]);
+    } catch (err: any) {
+      alert("Failed to create product in database: " + err.message);
+    }
   };
 
   const handleAddCategorySubmit = (e: React.FormEvent) => {
@@ -112,9 +131,24 @@ export default function AdminProductsPage() {
     setCatDescription("");
   };
 
-  const handleDeleteProduct = (id: string) => {
-    setProductsList(productsList.filter((p) => p.id !== id));
+  const handleDeleteProduct = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    try {
+      await deleteProduct(id);
+    } catch (err: any) {
+      alert("Failed to delete product from database: " + err.message);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="py-24 max-w-7xl mx-auto px-6 text-center text-xs font-label uppercase tracking-widest text-[#706C66]">
+        Authenticating Admin Credentials...
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <div className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 font-sans">
@@ -168,7 +202,7 @@ export default function AdminProductsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-200/60 font-sans text-neutral-800">
-            {productsList.map((prod) => (
+            {products.map((prod) => (
               <tr key={prod.id} className="hover:bg-neutral-50/50 transition-colors">
                 <td className="px-6 py-4">
                   <div className="relative w-12 h-16 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/50">
@@ -179,27 +213,29 @@ export default function AdminProductsPage() {
                   <span className="font-semibold text-black uppercase block">{prod.name}</span>
                   <span className="text-[11px] text-neutral-400 block">{prod.subtitle}</span>
                 </td>
-                <td className="px-6 py-4 uppercase text-[11px] font-semibold">{prod.categoryName}</td>
-                <td className="px-6 py-4 font-semibold">${prod.price.toFixed(2)}</td>
-                <td className="px-6 py-4 font-label font-bold text-neutral-500 space-x-1">
-                  {prod.sizes.map((s) => (
-                    <span key={s} className="bg-neutral-100 px-1.5 py-0.5 rounded">
-                      {s}
-                    </span>
-                  ))}
-                </td>
                 <td className="px-6 py-4">
-                  <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    ACTIVE
+                  <span className="bg-neutral-100 text-neutral-800 px-3 py-1 rounded-full text-[10px] uppercase font-semibold">
+                    {prod.categoryName}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right space-x-2">
+                <td className="px-6 py-4 font-semibold text-neutral-900">${prod.price}</td>
+                <td className="px-6 py-4">
+                  <span className="text-neutral-500 uppercase tracking-widest text-[10px]">
+                    {prod.sizes.join(", ")}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="inline-flex items-center text-green-700 font-semibold text-[10px] uppercase">
+                    <span className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1.5" />
+                    Active
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-right">
                   <button
                     onClick={() => handleDeleteProduct(prod.id)}
-                    className="p-2 text-neutral-400 hover:text-red-600 transition-colors rounded-full hover:bg-neutral-100"
-                    title="Delete product"
+                    className="p-2 text-neutral-400 hover:text-red-600 transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 stroke-[1.5]" />
                   </button>
                 </td>
               </tr>
@@ -210,66 +246,65 @@ export default function AdminProductsPage() {
 
       {/* Add Product Modal */}
       {isProductModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-[28px] max-w-lg w-full p-8 shadow-2xl relative space-y-6 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/40 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar">
             <button
               onClick={() => setIsProductModalOpen(false)}
               className="absolute top-6 right-6 text-neutral-400 hover:text-black"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6 stroke-[1.2]" />
             </button>
 
-            <div className="space-y-1">
-              <span className="text-[9px] font-label uppercase tracking-widest text-[#C8A46B] font-semibold">
-                NEW COUTURE
+            <div>
+              <span className="text-[9px] font-label uppercase tracking-widest text-[#706C66] font-semibold">
+                CREATE DROP
               </span>
-              <h2 className="text-2xl font-serif-luxury font-light uppercase tracking-wider text-black">
-                ADD NEW PRODUCT
-              </h2>
+              <h3 className="text-xl font-serif font-bold uppercase tracking-wider text-[#1a1a1a]">
+                ADD NEW ATELIER PIECE
+              </h3>
             </div>
 
-            <form onSubmit={handleAddProductSubmit} className="space-y-4">
+            <form onSubmit={handleAddProductSubmit} className="space-y-4 text-xs font-label">
               <div>
-                <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-1">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
                   Product Name
                 </label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Soren Cowl Satin Midi Dress"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. AURELIA SATIN MINI DRESS"
-                  className="bg-[#FAF8F5] text-xs font-label px-5 py-3 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-black"
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-1">
-                    Price ($)
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                    Price (USD)
                   </label>
                   <input
                     type="number"
                     required
+                    placeholder="490"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="250"
-                    className="bg-[#FAF8F5] text-xs font-label px-5 py-3 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-black"
+                    className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                   />
                 </div>
-
                 <div>
-                  <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-1">
-                    Category
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                    Category Selector
                   </label>
                   <select
                     value={selectedCategoryId}
                     onChange={(e) => setSelectedCategoryId(e.target.value)}
-                    className="bg-[#FAF8F5] text-xs font-label px-5 py-3 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-black"
+                    className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                   >
-                    {categoriesList.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
+                    {categoriesList.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
                       </option>
                     ))}
                   </select>
@@ -277,56 +312,43 @@ export default function AdminProductsPage() {
               </div>
 
               <div>
-                <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-1">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
                   Subtitle
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. Liquid Silk Gown"
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder="e.g. Heavy silk silhouette backless drape"
-                  className="bg-[#FAF8F5] text-xs font-label px-5 py-3 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-black"
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                 />
               </div>
 
-              {/* Sizing Checkboxes */}
               <div>
-                <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-2">
-                  Select Available Sizes
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                  Description
                 </label>
-                <div className="flex space-x-2">
-                  {["XS", "S", "M", "L", "XL"].map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => handleSizeToggle(size)}
-                      className={`w-10 h-10 rounded-full border text-xs font-label font-bold transition-all ${
-                        selectedSizes.includes(size)
-                          ? "bg-black text-white border-black"
-                          : "bg-[#FAF8F5] text-black border-neutral-200"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
+                <textarea
+                  placeholder="Material specs, tailored details, and silhouettes overview..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans resize-none"
+                />
               </div>
 
-              {/* Image selector */}
               <div>
-                <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-2">
-                  Atelier Image Asset
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                  Product Image Asset
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mt-1.5 max-h-36 overflow-y-auto border border-neutral-200/80 rounded-2xl p-2.5 bg-[#FAF8F5] no-scrollbar">
                   {presetImages.map((img) => (
                     <button
                       key={img.value}
                       type="button"
                       onClick={() => setImageUrl(img.value)}
-                      className={`text-[10px] font-label p-2.5 rounded-xl border text-left truncate transition-colors ${
-                        imageUrl === img.value
-                          ? "bg-[#FAF8F5] border-[#1A1A1A] font-bold"
-                          : "bg-white border-neutral-200 hover:border-black"
+                      className={`text-[10px] px-3 py-2 rounded-xl text-left border ${
+                        imageUrl === img.value ? "bg-black text-white border-black" : "bg-white text-neutral-800 border-neutral-200"
                       }`}
                     >
                       {img.label}
@@ -336,26 +358,31 @@ export default function AdminProductsPage() {
               </div>
 
               <div>
-                <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-1">
-                  Description
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                  Sizes Availability
                 </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Atelier draping features..."
-                  rows={2}
-                  className="bg-[#FAF8F5] text-xs font-label px-5 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black"
-                />
+                <div className="flex flex-wrap gap-2">
+                  {["XXS", "XS", "S", "M", "L", "XL", "XXL"].map((sz) => (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => handleSizeToggle(sz)}
+                      className={`w-10 h-10 rounded-xl text-xs flex items-center justify-center font-bold border transition-colors ${
+                        selectedSizes.includes(sz) ? "bg-black text-white border-black" : "bg-[#FAF8F5] text-neutral-800 border-neutral-200 hover:border-black"
+                      }`}
+                    >
+                      {sz}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="w-full bg-black text-white text-xs font-label uppercase tracking-widest py-4 rounded-full font-semibold hover:bg-neutral-800 transition-colors shadow-md"
-                >
-                  ADD COUTURE PIECE
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="w-full bg-[#1A1A1A] text-[#FAF8F5] text-xs uppercase tracking-[0.2em] py-4 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors"
+              >
+                CREATE PIECE DROP
+              </button>
             </form>
           </div>
         </div>
@@ -363,67 +390,64 @@ export default function AdminProductsPage() {
 
       {/* Add Category Modal */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-[28px] max-w-lg w-full p-8 shadow-2xl relative space-y-6 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/40 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative">
             <button
               onClick={() => setIsCategoryModalOpen(false)}
               className="absolute top-6 right-6 text-neutral-400 hover:text-black"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6 stroke-[1.2]" />
             </button>
 
-            <div className="space-y-1">
-              <span className="text-[9px] font-label uppercase tracking-widest text-[#C8A46B] font-semibold">
-                NEW SECTOR
+            <div>
+              <span className="text-[9px] font-label uppercase tracking-widest text-[#706C66] font-semibold">
+                CREATE INDEX
               </span>
-              <h2 className="text-2xl font-serif-luxury font-light uppercase tracking-wider text-black">
+              <h3 className="text-xl font-serif font-bold uppercase tracking-wider text-[#1a1a1a]">
                 ADD NEW CATEGORY
-              </h2>
+              </h3>
             </div>
 
-            <form onSubmit={handleAddCategorySubmit} className="space-y-4">
+            <form onSubmit={handleAddCategorySubmit} className="space-y-4 text-xs font-label">
               <div>
-                <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-1">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
                   Category Name
                 </label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Sculpt & Contour"
                   value={catName}
                   onChange={(e) => setCatName(e.target.value)}
-                  placeholder="e.g. Couture Silk, Knitwear"
-                  className="bg-[#FAF8F5] text-xs font-label px-5 py-3 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-black"
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-1">
-                  Brief description
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                  Description
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  placeholder="Brief description of the catalog layer..."
                   value={catDescription}
                   onChange={(e) => setCatDescription(e.target.value)}
-                  placeholder="e.g. Fine knit cashmere blends"
-                  className="bg-[#FAF8F5] text-xs font-label px-5 py-3 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-black"
+                  rows={2}
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans resize-none"
                 />
               </div>
 
-              {/* Category Image selector */}
               <div>
-                <label className="text-[10px] font-label uppercase tracking-wider text-neutral-500 block mb-2">
-                  Atelier Category Cover Image
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                  Category Image Banner
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mt-1.5 bg-[#FAF8F5] p-2 rounded-2xl border border-neutral-200/80">
                   {presetCategoryImages.map((img) => (
                     <button
                       key={img.value}
                       type="button"
                       onClick={() => setCatImage(img.value)}
-                      className={`text-[10px] font-label p-2.5 rounded-xl border text-left truncate transition-colors ${
-                        catImage === img.value
-                          ? "bg-[#FAF8F5] border-[#1A1A1A] font-bold"
-                          : "bg-white border-neutral-200 hover:border-black"
+                      className={`text-[10px] px-3 py-2 rounded-xl text-left border ${
+                        catImage === img.value ? "bg-black text-white border-black" : "bg-white text-neutral-800 border-neutral-200"
                       }`}
                     >
                       {img.label}
@@ -432,14 +456,12 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  className="w-full bg-black text-white text-xs font-label uppercase tracking-widest py-4 rounded-full font-semibold hover:bg-neutral-800 transition-colors shadow-md"
-                >
-                  ADD ATELIER CATEGORY
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="w-full bg-[#1A1A1A] text-[#FAF8F5] text-xs uppercase tracking-[0.2em] py-4 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors"
+              >
+                CREATE CATEGORY INDEX
+              </button>
             </form>
           </div>
         </div>

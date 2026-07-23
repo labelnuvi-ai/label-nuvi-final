@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { ProductCard } from "@/components/product/ProductCard";
-import { PRODUCTS } from "@/lib/data/mockData";
+import { useProducts } from "@/hooks/useProducts";
 
 interface FeaturedDropProps {
   title: string;
@@ -18,9 +18,11 @@ export function FeaturedDrop({
   categoryFilter,
   viewAllLink = "/shop",
 }: FeaturedDropProps) {
+  const { products } = useProducts();
+
   const filtered = categoryFilter
-    ? PRODUCTS.filter((p) => p.categoryId === categoryFilter)
-    : PRODUCTS;
+    ? products.filter((p) => p.categoryId === categoryFilter)
+    : products;
 
   return (
     <section className="py-20 max-w-7xl mx-auto px-6 lg:px-12 space-y-10">

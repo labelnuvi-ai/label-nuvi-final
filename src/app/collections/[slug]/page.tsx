@@ -4,7 +4,9 @@ import { use, useMemo } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/product/ProductCard";
-import { PRODUCTS, COLLECTIONS } from "@/lib/data/mockData";
+import { COLLECTIONS } from "@/lib/data/mockData";
+import { useProducts } from "@/hooks/useProducts";
+import { RefreshCw } from "lucide-react";
 
 interface CollectionPageProps {
   params: Promise<{ slug: string }>;
@@ -12,16 +14,17 @@ interface CollectionPageProps {
 
 export default function CollectionPage({ params }: CollectionPageProps) {
   const { slug } = use(params);
+  const { products, loading } = useProducts();
 
   const collection = COLLECTIONS.find((c) => c.slug === slug);
   if (!collection) {
     notFound();
   }
 
-  // In our mock set, we show products for the collection
+  // Filter products by collectionId or fall back to showing all matching list items
   const collectionProducts = useMemo(() => {
-    return PRODUCTS;
-  }, []);
+    return products.filter((p) => p.collectionId === collection.id || !p.collectionId);
+  }, [products, collection.id]);
 
   return (
     <div className="py-20 max-w-7xl mx-auto px-6 lg:px-12 space-y-12">
@@ -39,11 +42,26 @@ export default function CollectionPage({ params }: CollectionPageProps) {
       </div>
 
       <div className="border-t border-neutral-200/60 pt-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {collectionProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="py-24 text-center">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto text-neutral-400 mb-2" />
+            <p className="text-[10px] font-label uppercase tracking-widest text-[#706C66]">
+              Loading lookbook collection...
+            </p>
+          </div>
+        ) : collectionProducts.length === 0 ? (
+          <div className="py-24 text-center">
+            <p className="text-xs font-label uppercase tracking-[0.2em] text-[#706C66]">
+              No pieces are currently active in this collection drop.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {collectionProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
