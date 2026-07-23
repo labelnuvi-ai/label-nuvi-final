@@ -33,10 +33,17 @@ export default function AdminLayout({
           .eq("id", user.id)
           .single();
 
-        if (error || profile?.role !== "admin") {
-          router.push("/account");
-        } else {
+        console.log("User ID:", user.id);
+        console.log("Profile:", profile);
+        console.log("Role:", profile?.role);
+        if (error) {
+          console.error("Profile fetch error:", error);
+        }
+
+        if (profile?.role === "admin") {
           setAuthorized(true);
+        } else {
+          router.push("/account");
         }
       } catch (err) {
         console.error("Admin verification error:", err);
