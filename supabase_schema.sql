@@ -1,5 +1,5 @@
 -- Supabase Database Schema for LABEL NUVI
--- Create tables for Profiles, Cart Items, Wishlist Items, Orders, and Order Items
+-- Create tables for Profiles, Cart Items, Wishlist Items, Orders, Order Items, and Products
 
 -- 1. profiles Table
 CREATE TABLE IF NOT EXISTS profiles (
@@ -36,11 +36,72 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 2. cart_items Table
+-- 2. categories Table
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  item_count INTEGER DEFAULT 0 NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
+CREATE POLICY "Admin manage categories" ON categories FOR ALL USING (true);
+
+-- 3. collections Table
+CREATE TABLE IF NOT EXISTS collections (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  subtitle TEXT,
+  description TEXT,
+  banner_image TEXT,
+  is_featured BOOLEAN DEFAULT false NOT NULL,
+  products_count INTEGER DEFAULT 0 NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE collections ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read collections" ON collections FOR SELECT USING (true);
+CREATE POLICY "Admin manage collections" ON collections FOR ALL USING (true);
+
+-- 4. products Table
+CREATE TABLE IF NOT EXISTS products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  subtitle TEXT,
+  description TEXT,
+  price DECIMAL(10, 2) NOT NULL,
+  sale_price DECIMAL(10, 2),
+  is_new BOOLEAN DEFAULT true NOT NULL,
+  is_bestseller BOOLEAN DEFAULT false NOT NULL,
+  is_sold_out BOOLEAN DEFAULT false NOT NULL,
+  images TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,
+  colors JSONB DEFAULT '[]'::JSONB NOT NULL,
+  sizes TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,
+  category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
+  category_name TEXT NOT NULL,
+  collection_id TEXT REFERENCES collections(id) ON DELETE SET NULL,
+  rating DECIMAL(3, 2) DEFAULT 5.00 NOT NULL,
+  reviews_count INTEGER DEFAULT 0 NOT NULL,
+  details TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,
+  fabric_care TEXT[] DEFAULT '{}'::TEXT[] NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read products" ON products FOR SELECT USING (true);
+CREATE POLICY "Admin manage products" ON products FOR ALL USING (true);
+
+-- 5. cart_items Table
 CREATE TABLE IF NOT EXISTS cart_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  product_id TEXT NOT NULL,
+  product_id TEXT REFERENCES products(id) ON DELETE CASCADE,
   color_name TEXT NOT NULL,
   color_hex TEXT NOT NULL,
   size_value TEXT NOT NULL,
@@ -54,11 +115,11 @@ ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own cart items" ON cart_items
   FOR ALL USING (auth.uid() = user_id);
 
--- 3. wishlist_items Table
+-- 6. wishlist_items Table
 CREATE TABLE IF NOT EXISTS wishlist_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  product_id TEXT NOT NULL,
+  product_id TEXT REFERENCES products(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   UNIQUE(user_id, product_id)
 );
@@ -69,7 +130,7 @@ ALTER TABLE wishlist_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own wishlist items" ON wishlist_items
   FOR ALL USING (auth.uid() = user_id);
 
--- 4. orders Table
+-- 7. orders Table
 CREATE TABLE IF NOT EXISTS orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users ON DELETE SET NULL,
@@ -102,11 +163,11 @@ CREATE POLICY "Users can view their own orders" ON orders
 CREATE POLICY "Users can create their own orders" ON orders
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 5. order_items Table
+-- 8. order_items Table
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   order_id UUID REFERENCES orders(id) ON DELETE CASCADE NOT NULL,
-  product_id TEXT NOT NULL,
+  product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
   product_name TEXT NOT NULL,
   product_image TEXT NOT NULL,
   color TEXT NOT NULL,
