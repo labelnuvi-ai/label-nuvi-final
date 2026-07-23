@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Package, Heart, MapPin, Settings, LogOut, User } from "lucide-react";
-import { MOCK_ORDERS } from "@/lib/data/mockData";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,6 +14,7 @@ export default function AccountPage() {
 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [ordersCount, setOrdersCount] = useState(0);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -23,6 +23,15 @@ export default function AccountPage() {
         router.push("/login");
       } else {
         setUser(user);
+        try {
+          const { count } = await supabase
+            .from("orders")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id);
+          setOrdersCount(count || 0);
+        } catch (err) {
+          console.error("Error loading user orders count:", err);
+        }
       }
       setLoading(false);
     };
@@ -84,7 +93,7 @@ export default function AccountPage() {
           </div>
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-900">MY ORDERS</h3>
-            <p className="text-xs text-neutral-500">{MOCK_ORDERS.length} active atelier order</p>
+            <p className="text-xs text-neutral-500">{ordersCount} active order(s)</p>
           </div>
         </Link>
 

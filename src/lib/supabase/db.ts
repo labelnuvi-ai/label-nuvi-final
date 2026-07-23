@@ -1,6 +1,5 @@
 import { createClient } from "./client";
 import { CartItem, Order, Product } from "@/types";
-import { PRODUCTS } from "../data/mockData";
 
 const supabase = createClient();
 
@@ -114,7 +113,7 @@ export async function fetchCartDb(userId: string): Promise<CartItem[]> {
     console.error("Error fetching products during cart load:", pErr);
   }
 
-  const allProducts = [...dbProducts, ...PRODUCTS];
+  const allProducts = dbProducts;
 
   const cartItems: CartItem[] = [];
   (cartData || []).forEach((dbItem) => {

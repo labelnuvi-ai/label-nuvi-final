@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sliders, Plus, Trash2, Edit3, ArrowLeft, X, Tag, Upload, RefreshCw } from "lucide-react";
-import { CATEGORIES, COLLECTIONS } from "@/lib/data/mockData";
 import { Product, Category, Collection } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { useProducts } from "@/hooks/useProducts";
@@ -13,12 +12,24 @@ import { useProducts } from "@/hooks/useProducts";
 export default function AdminProductsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { products, loading: productsLoading, addProduct, updateProduct, deleteProduct, uploadProductImage } = useProducts();
+  const { products, categories, collections, loading: productsLoading, addProduct, updateProduct, deleteProduct, uploadProductImage } = useProducts();
 
-  const [categoriesList, setCategoriesList] = useState<Category[]>(CATEGORIES);
-  const [collectionsList, setCollectionsList] = useState<Collection[]>(COLLECTIONS);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [collectionsList, setCollectionsList] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (categories.length > 0) {
+      setCategoriesList(categories);
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    if (collections.length > 0) {
+      setCollectionsList(collections);
+    }
+  }, [collections]);
 
   // Modals state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -29,8 +40,8 @@ export default function AdminProductsPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORIES[0]?.id || "cat-1");
-  const [selectedCollectionId, setSelectedCollectionId] = useState(COLLECTIONS[0]?.id || "col-1");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("cat-1");
+  const [selectedCollectionId, setSelectedCollectionId] = useState("col-1");
   const [subtitle, setSubtitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("/images/product-dress-front.jpg");
@@ -79,8 +90,8 @@ export default function AdminProductsPage() {
     setName("");
     setPrice("");
     setSalePrice("");
-    setSelectedCategoryId(CATEGORIES[0]?.id || "cat-1");
-    setSelectedCollectionId(COLLECTIONS[0]?.id || "col-1");
+    setSelectedCategoryId(categoriesList[0]?.id || "cat-1");
+    setSelectedCollectionId(collectionsList[0]?.id || "col-1");
     setSubtitle("");
     setDescription("");
     setImageUrl("/images/product-dress-front.jpg");

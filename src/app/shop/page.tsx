@@ -3,11 +3,10 @@
 import { useState, useMemo } from "react";
 import { Grid3X3, Grid2X2, ChevronDown, RefreshCw } from "lucide-react";
 import { ProductCard } from "@/components/product/ProductCard";
-import { CATEGORIES } from "@/lib/data/mockData";
 import { useProducts } from "@/hooks/useProducts";
 
 export default function ShopPage() {
-  const { products, loading } = useProducts();
+  const { products, categories, loading } = useProducts();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("featured");
   const [gridCols, setGridCols] = useState<number>(4);
@@ -63,7 +62,7 @@ export default function ShopPage() {
             All ({products.length})
           </button>
 
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}

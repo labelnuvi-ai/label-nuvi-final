@@ -2,7 +2,21 @@
 
 import Link from "next/link";
 import { ArrowLeft, MapPin, Plus } from "lucide-react";
-import { MOCK_ADDRESSES } from "@/lib/data/mockData";
+const LOCAL_ADDRESSES = [
+  {
+    id: "addr-1",
+    label: "Primary Residence",
+    fullName: "Victoria Sterling",
+    addressLine1: "740 Park Avenue",
+    addressLine2: "Apartment 14B",
+    city: "New York",
+    state: "NY",
+    postalCode: "10021",
+    country: "United States",
+    phone: "+1 (212) 555-0198",
+    isDefault: true,
+  }
+];
 
 export default function AccountAddressesPage() {
   return (
@@ -31,7 +45,7 @@ export default function AccountAddressesPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {MOCK_ADDRESSES.map((addr) => (
+        {LOCAL_ADDRESSES.map((addr) => (
           <div
             key={addr.id}
             className="bg-white p-6 rounded-[24px] border border-neutral-200/60 shadow-luxury-xs space-y-4"

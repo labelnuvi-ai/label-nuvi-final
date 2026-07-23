@@ -1,69 +1,102 @@
 import { useState, useEffect, useCallback } from "react";
-import { Product } from "@/types";
-import { PRODUCTS } from "@/lib/data/mockData";
+import { Product, Category, Collection } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadProducts = useCallback(async () => {
+  const loadCatalog = useCallback(async () => {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { data, error } = await supabase
+      
+      // Fetch Products
+      const { data: prodData, error: prodError } = await supabase
         .from("products")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        const dbProducts: Product[] = data.map((row) => ({
-          id: row.id,
-          name: row.name,
-          slug: row.slug,
-          subtitle: row.subtitle,
-          description: row.description,
-          price: Number(row.price),
-          salePrice: row.sale_price ? Number(row.sale_price) : undefined,
-          isNew: row.is_new,
-          isBestseller: row.is_bestseller,
-          isSoldOut: row.is_sold_out,
-          images: row.images || ["/images/product-dress-front.jpg"],
-          colors: row.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
-          sizes: row.sizes || ["S", "M"],
-          categoryId: row.category_id,
-          categoryName: row.category_name || "Dresses",
-          rating: Number(row.rating || 5.0),
-          reviewsCount: Number(row.reviews_count || 0),
-          createdAt: row.created_at,
-          details: row.details || ["Dry clean only"],
-          fabricCare: row.fabric_care || ["Dry clean only"],
-        }));
+      // Fetch Categories
+      const { data: catData, error: catError } = await supabase
+        .from("categories")
+        .select("*");
 
-        // Filter out mock duplicates
-        const mockFiltered = PRODUCTS.filter(
-          (mp) => !dbProducts.some((dbp) => dbp.id === mp.id)
+      // Fetch Collections
+      const { data: colData, error: colError } = await supabase
+        .from("collections")
+        .select("*");
+
+      if (!prodError && prodData) {
+        setProducts(
+          prodData.map((row) => ({
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            subtitle: row.subtitle,
+            description: row.description,
+            price: Number(row.price),
+            salePrice: row.sale_price ? Number(row.sale_price) : undefined,
+            isNew: row.is_new,
+            isBestseller: row.is_bestseller,
+            isSoldOut: row.is_sold_out,
+            images: row.images || ["/images/product-dress-front.jpg"],
+            colors: row.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
+            sizes: row.sizes || ["S", "M"],
+            categoryId: row.category_id,
+            categoryName: row.category_name || "Dresses",
+            collectionId: row.collection_id || undefined,
+            rating: Number(row.rating || 5.0),
+            reviewsCount: Number(row.reviews_count || 0),
+            createdAt: row.created_at,
+            details: row.details || ["Dry clean only"],
+            fabricCare: row.fabric_care || ["Dry clean only"],
+          }))
         );
+      }
 
-        setProducts([...dbProducts, ...mockFiltered]);
-      } else {
-        setProducts(PRODUCTS);
+      if (!catError && catData) {
+        setCategories(
+          catData.map((row) => ({
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            description: row.description || "",
+            imageUrl: row.image_url || "/images/category-dresses.jpg",
+            itemCount: row.item_count || 0,
+          }))
+        );
+      }
+
+      if (!colError && colData) {
+        setCollections(
+          colData.map((row) => ({
+            id: row.id,
+            title: row.title,
+            slug: row.slug,
+            subtitle: row.subtitle || "",
+            description: row.description || "",
+            bannerImage: row.banner_image || "/images/editorial-banner.jpg",
+            isFeatured: row.is_featured,
+            productsCount: row.products_count || 0,
+          }))
+        );
       }
     } catch (err) {
-      console.error("Error loading products:", err);
-      setProducts(PRODUCTS);
+      console.error("Error loading catalog:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    loadCatalog();
+  }, [loadCatalog]);
 
   const addProduct = async (productData: Partial<Product>) => {
     const supabase = createClient();
-    
     const id = productData.id || "prod-" + Math.floor(100000 + Math.random() * 900000);
     const dbRow = {
       id,
@@ -81,6 +114,7 @@ export function useProducts() {
       sizes: productData.sizes || ["S", "M"],
       category_id: productData.categoryId || "cat-1",
       category_name: productData.categoryName || "Dresses",
+      collection_id: productData.collectionId || null,
       rating: 5.0,
       reviews_count: 0,
       details: productData.details || ["Dry clean only", "Made in France"],
@@ -94,17 +128,16 @@ export function useProducts() {
       .single();
 
     if (error) {
-      console.error("Error inserting product in Supabase:", error);
+      console.error("Error inserting product:", error);
       throw error;
     }
     
-    await loadProducts();
+    await loadCatalog();
     return data;
   };
 
   const updateProduct = async (productId: string, productData: Partial<Product>) => {
     const supabase = createClient();
-    
     const dbRow: any = {};
     if (productData.name !== undefined) dbRow.name = productData.name;
     if (productData.slug !== undefined) dbRow.slug = productData.slug;
@@ -120,6 +153,7 @@ export function useProducts() {
     if (productData.sizes !== undefined) dbRow.sizes = productData.sizes;
     if (productData.categoryId !== undefined) dbRow.category_id = productData.categoryId;
     if (productData.categoryName !== undefined) dbRow.category_name = productData.categoryName;
+    if (productData.collectionId !== undefined) dbRow.collection_id = productData.collectionId;
     if (productData.details !== undefined) dbRow.details = productData.details;
     if (productData.fabricCare !== undefined) dbRow.fabric_care = productData.fabricCare;
 
@@ -131,11 +165,11 @@ export function useProducts() {
       .single();
 
     if (error) {
-      console.error("Error updating product in Supabase:", error);
+      console.error("Error updating product:", error);
       throw error;
     }
     
-    await loadProducts();
+    await loadCatalog();
     return data;
   };
 
@@ -147,11 +181,11 @@ export function useProducts() {
       .eq("id", productId);
 
     if (error) {
-      console.error("Error deleting product from Supabase:", error);
+      console.error("Error deleting product:", error);
       throw error;
     }
 
-    await loadProducts();
+    await loadCatalog();
   };
 
   const uploadProductImage = async (file: File): Promise<string> => {
@@ -176,5 +210,5 @@ export function useProducts() {
     return publicUrl;
   };
 
-  return { products, loading, addProduct, updateProduct, deleteProduct, uploadProductImage, refresh: loadProducts };
+  return { products, categories, collections, loading, addProduct, updateProduct, deleteProduct, uploadProductImage, refresh: loadCatalog };
 }

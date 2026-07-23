@@ -3,11 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Save, Sparkles, Check } from "lucide-react";
-import { CMS_HERO_DATA, CMS_ANNOUNCEMENTS } from "@/lib/data/mockData";
+const LOCAL_CMS_HERO = {
+  title: "ATELIER DROP '26",
+  subtitle: "High Fashion Runway Silhouettes",
+  badge: "ATELIER COUTURE • SPRING/SUMMER",
+  ctaText: "DISCOVER CATALOGUE",
+  ctaLink: "/shop",
+};
 
 export default function CMSPage() {
-  const [heroData, setHeroData] = useState(CMS_HERO_DATA);
-  const [announcementText, setAnnouncementText] = useState(CMS_ANNOUNCEMENTS[0].text);
+  const [heroData, setHeroData] = useState(LOCAL_CMS_HERO);
+  const [announcementText, setAnnouncementText] = useState("COMPLIMENTARY SHIPPING ON ORDERS ABOVE $300");
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {

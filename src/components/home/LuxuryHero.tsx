@@ -4,7 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
-import { CMS_HERO_DATA } from "@/lib/data/mockData";
+
+const HERO_DATA = {
+  title: "ATELIER DROP '26",
+  badge: "ATELIER COUTURE • SPRING/SUMMER",
+  backgroundImage: "/images/hero-portrait.jpg",
+  ctaText: "DISCOVER COLLECTION",
+  ctaLink: "/shop",
+};
 
 export function LuxuryHero() {
   return (
@@ -17,7 +24,7 @@ export function LuxuryHero() {
         className="absolute inset-0 w-full h-full"
       >
         <Image
-          src={CMS_HERO_DATA.backgroundImage}
+          src={HERO_DATA.backgroundImage}
           alt="LABEL NUVI Atelier Couture Hero"
           fill
           priority
@@ -36,7 +43,7 @@ export function LuxuryHero() {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className="text-[10px] font-label uppercase tracking-[0.4em] text-[#C8A46B] font-medium block"
         >
-          {CMS_HERO_DATA.badge}
+          {HERO_DATA.badge}
         </motion.span>
 
         <motion.h1
@@ -45,7 +52,7 @@ export function LuxuryHero() {
           transition={{ duration: 1.2, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="text-5xl sm:text-7xl lg:text-8xl font-serif-luxury font-light tracking-[0.1em] uppercase text-[#FAF8F5] leading-none"
         >
-          {CMS_HERO_DATA.title}
+          {HERO_DATA.title}
         </motion.h1>
 
         {/* Primary CTA Button */}
@@ -56,22 +63,19 @@ export function LuxuryHero() {
           className="pt-6"
         >
           <Link
-            href={CMS_HERO_DATA.ctaLink}
+            href={HERO_DATA.ctaLink}
             className="inline-block bg-[#FAF8F5] text-[#1A1A1A] text-[11px] font-label uppercase tracking-[0.3em] px-10 py-4 font-medium hover:bg-[#C8A46B] hover:text-white transition-all duration-700 rounded-full shadow-luxury-md transform hover:-translate-y-0.5"
           >
-            {CMS_HERO_DATA.ctaText}
+            {HERO_DATA.ctaText}
           </Link>
         </motion.div>
       </div>
 
-      {/* Down Scroll Indicator */}
-      <motion.div
-        animate={{ y: [0, 6, 0] }}
-        transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-[#FAF8F5]/50 hover:text-[#FAF8F5] cursor-pointer"
-      >
-        <ArrowDown className="w-4 h-4 stroke-[1]" />
-      </motion.div>
+      {/* Scroll Down Indicator */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center space-y-2 opacity-50 hover:opacity-100 transition-opacity">
+        <span className="text-[9px] font-label uppercase tracking-[0.3em] text-[#FAF8F5]">SCROLL</span>
+        <ArrowDown className="w-4 h-4 text-[#FAF8F5] animate-bounce stroke-[1.2]" />
+      </div>
     </section>
   );
 }
