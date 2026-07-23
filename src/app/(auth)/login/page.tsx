@@ -2,36 +2,68 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, ArrowRight } from "lucide-react";
-import { LUXURY_EASE } from "@/lib/utils/motion";
+import { Mail, Lock, ArrowRight } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = createClient();
+
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      setIsSubmitting(true);
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setOtpSent(true);
-      }, 800);
+    setErrorMsg("");
+    setSuccessMsg("");
+    setIsSubmitting(true);
+
+    try {
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+        if (error) throw error;
+        setSuccessMsg("Verification link sent. Please verify your email to activate.");
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        router.push("/account");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Authentication failed. Try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleLogin = async () => {
+    setErrorMsg("");
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setErrorMsg(err.message || "OAuth redirection failed.");
       setIsSubmitting(false);
-      router.push("/account");
-    }, 1000);
+    }
   };
 
   return (
@@ -54,24 +86,22 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Login Form (6 cols) */}
+      {/* Right Login/Signup Form (6 cols) */}
       <div className="lg:col-span-6 flex flex-col justify-center bg-white p-8 sm:p-12 rounded-[24px] border border-neutral-200/50 shadow-luxury-xs space-y-8">
         <div className="space-y-2">
           <span className="text-[10px] font-label uppercase tracking-[0.3em] text-[#706C66] font-semibold block">
             ATELIER ACCESS
           </span>
           <h1 className="text-3xl font-serif-luxury font-light uppercase tracking-wider text-[#1a1a1a]">
-            MEMBER LOGIN
+            {isSignUp ? "CREATE ACCOUNT" : "MEMBER LOGIN"}
           </h1>
         </div>
 
-        {/* Google OAuth trigger */}
+        {/* Google OAuth Trigger */}
         <button
-          onClick={() => {
-            setIsSubmitting(true);
-            setTimeout(() => router.push("/account"), 1000);
-          }}
-          className="w-full bg-[#FAF8F5] text-[#1a1a1a] border border-neutral-200 py-3.5 px-6 rounded-full text-xs font-label uppercase tracking-wider font-semibold flex items-center justify-center space-x-3 hover:border-black transition-colors"
+          onClick={handleGoogleLogin}
+          disabled={isSubmitting}
+          className="w-full bg-[#FAF8F5] text-[#1a1a1a] border border-neutral-200 py-3.5 px-6 rounded-full text-xs font-label uppercase tracking-wider font-semibold flex items-center justify-center space-x-3 hover:border-black transition-colors disabled:opacity-50"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -84,74 +114,79 @@ export default function LoginPage() {
 
         <div className="relative text-center border-b border-neutral-200/60 py-2">
           <span className="bg-white px-4 text-[9px] font-label uppercase tracking-widest text-[#706C66] font-semibold absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            OR WITH EMAIL OTP
+            OR WITH PASSWORD
           </span>
         </div>
 
-        {!otpSent ? (
-          <form onSubmit={handleSendOtp} className="space-y-5">
-            <div>
-              <label className="text-[10px] font-label uppercase tracking-wider text-[#706C66] block mb-2">
-                Your Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2 stroke-[1.2]" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@domain.com"
-                  className="bg-[#FAF8F5] text-xs font-label pl-12 pr-4 py-4 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-[#1a1a1a]"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-[#1a1a1a] text-white text-xs font-label uppercase tracking-[0.2em] py-4 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors flex items-center justify-center space-x-2 shadow-luxury-md"
-            >
-              <span>SEND PASSCODE</span>
-              <ArrowRight className="w-4 h-4 stroke-[1.2]" />
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-5">
-            <div className="p-3.5 bg-green-50 text-green-800 text-[11px] rounded-xl font-medium uppercase tracking-wider">
-              We sent a 6-digit passcode to <strong>{email}</strong>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-label uppercase tracking-wider text-[#706C66] block mb-2">
-                Enter 6-Digit Passcode
-              </label>
-              <input
-                type="text"
-                required
-                maxLength={6}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="123456"
-                className="bg-[#FAF8F5] text-center text-lg font-label tracking-[0.3em] font-bold py-3.5 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-[#1a1a1a]"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-[#1a1a1a] text-[#FAF8F5] text-xs font-label uppercase tracking-[0.2em] py-4 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors flex items-center justify-center space-x-2"
-            >
-              <span>VERIFY CODE & LOG IN</span>
-            </button>
-          </form>
+        {errorMsg && (
+          <div className="p-3.5 bg-red-50 text-red-800 text-[11px] rounded-xl font-medium uppercase tracking-wider">
+            {errorMsg}
+          </div>
         )}
 
+        {successMsg && (
+          <div className="p-3.5 bg-green-50 text-green-800 text-[11px] rounded-xl font-medium uppercase tracking-wider">
+            {successMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div>
+            <label className="text-[10px] font-label uppercase tracking-wider text-[#706C66] block mb-2">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2 stroke-[1.2]" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@domain.com"
+                className="bg-[#FAF8F5] text-xs font-label pl-12 pr-4 py-4 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-[#1a1a1a]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-label uppercase tracking-wider text-[#706C66] block mb-2">
+              Password
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2 stroke-[1.2]" />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="bg-[#FAF8F5] text-xs font-label pl-12 pr-4 py-4 w-full rounded-full border border-neutral-200 focus:outline-none focus:border-[#1a1a1a]"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-[#1a1a1a] text-white text-xs font-label uppercase tracking-[0.2em] py-4 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors flex items-center justify-center space-x-2 shadow-luxury-md disabled:opacity-50"
+          >
+            <span>{isSignUp ? "CREATE ACCOUNT" : "SIGN IN"}</span>
+            <ArrowRight className="w-4 h-4 stroke-[1.2]" />
+          </button>
+        </form>
+
         <div className="text-center text-xs text-neutral-500 pt-2 font-label">
-          New to LABEL NUVI?{" "}
-          <Link href="/login" className="text-black font-bold underline uppercase tracking-wider">
-            Create account
-          </Link>
+          {isSignUp ? "Already have an account?" : "New to LABEL NUVI?"}{" "}
+          <button
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setErrorMsg("");
+              setSuccessMsg("");
+            }}
+            className="text-black font-bold underline uppercase tracking-wider"
+          >
+            {isSignUp ? "Sign In" : "Create Account"}
+          </button>
         </div>
       </div>
     </div>

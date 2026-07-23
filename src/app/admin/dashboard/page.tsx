@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   Package,
@@ -13,14 +14,43 @@ import {
   Plus,
 } from "lucide-react";
 import { PRODUCTS, MOCK_ORDERS } from "@/lib/data/mockData";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const verifyAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+      } else {
+        setUser(user);
+      }
+      setLoading(false);
+    };
+    verifyAdmin();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-24 max-w-7xl mx-auto px-6 text-center text-xs font-label uppercase tracking-widest text-[#706C66]">
+        Authenticating Admin Credentials...
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
   return (
     <div className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 pb-6 gap-4">
         <div>
-          <span className="text-[11px] uppercase tracking-[0.3em] text-amber-600 font-semibold block">
+          <span className="text-[11px] uppercase tracking-[0.3em] text-[#C8A46B] font-semibold block">
             ATELIER ADMIN PORTAL
           </span>
           <h1 className="text-3xl font-serif font-bold uppercase tracking-wider text-neutral-900">
@@ -98,37 +128,37 @@ export default function AdminDashboardPage() {
 
           <div className="divide-y divide-neutral-100">
             {MOCK_ORDERS.map((ord) => (
-              <div key={ord.id} className="py-3 flex justify-between items-center text-xs">
+              <div key={ord.id} className="py-4 flex justify-between items-center text-xs">
                 <div>
-                  <span className="font-bold text-neutral-900 block">{ord.orderNumber}</span>
-                  <span className="text-neutral-500">{ord.shippingAddress.fullName} • {ord.date}</span>
+                  <p className="font-bold text-neutral-900">{ord.orderNumber}</p>
+                  <p className="text-neutral-400">{ord.date} &bull; {ord.paymentMethod}</p>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-neutral-900 block">${ord.total}</span>
-                  <span className="text-[10px] uppercase font-bold text-green-700">{ord.status}</span>
+                  <p className="font-bold text-neutral-900">${ord.total}</p>
+                  <p className="text-green-700 font-semibold">{ord.status}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Inventory Quick Status (5 cols) */}
+        {/* Catalog Preview (5 cols) */}
         <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-neutral-200/80 space-y-4 shadow-xs">
           <div className="flex justify-between items-center pb-3 border-b border-neutral-200">
-            <h3 className="text-sm font-serif font-bold uppercase tracking-wider">CATALOG INVENTORY</h3>
+            <h3 className="text-sm font-serif font-bold uppercase tracking-wider">CATALOG OVERVIEW</h3>
             <Link href="/admin/products" className="text-xs uppercase tracking-widest text-neutral-500 hover:text-black">
-              Manage Catalog &rarr;
+              Manage Products &rarr;
             </Link>
           </div>
 
-          <div className="space-y-3">
-            {PRODUCTS.map((prod) => (
-              <div key={prod.id} className="flex justify-between items-center text-xs p-2 rounded-xl bg-[#FAF9F6]">
-                <div className="line-clamp-1 pr-2">
-                  <span className="font-bold text-neutral-900 block">{prod.name}</span>
-                  <span className="text-neutral-500 text-[10px]">{prod.categoryName}</span>
+          <div className="divide-y divide-neutral-100">
+            {PRODUCTS.slice(0, 4).map((p) => (
+              <div key={p.id} className="py-3.5 flex justify-between items-center text-xs">
+                <div>
+                  <p className="font-bold text-neutral-900">{p.name}</p>
+                  <p className="text-neutral-400">{p.categoryName}</p>
                 </div>
-                <span className="font-bold text-neutral-900 shrink-0">${prod.price}</span>
+                <p className="font-bold text-neutral-900">${p.price}</p>
               </div>
             ))}
           </div>
