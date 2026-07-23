@@ -116,7 +116,7 @@ export default function AdminDashboardPage() {
             <span>Total Sales Revenue</span>
             <TrendingUp className="w-4 h-4 text-green-600" />
           </div>
-          <p className="text-3xl font-serif font-bold text-neutral-900">${totalRevenue.toFixed(2)}</p>
+          <p className="text-3xl font-serif font-bold text-neutral-900">₹{totalRevenue.toFixed(2)}</p>
           <p className="text-[11px] text-green-700 font-medium">+18.4% from last month</p>
         </div>
 
@@ -170,7 +170,7 @@ export default function AdminDashboardPage() {
                     <p className="text-neutral-400">{ord.date} &bull; {ord.payment_method}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-neutral-900">${Number(ord.total).toFixed(2)}</p>
+                    <p className="font-bold text-neutral-900">₹{Number(ord.total).toFixed(2)}</p>
                     <p className="text-green-700 font-semibold">{ord.status}</p>
                   </div>
                 </div>
@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
                   <p className="font-bold text-neutral-900">{p.name}</p>
                   <p className="text-neutral-400">{p.categoryName}</p>
                 </div>
-                <p className="font-bold text-neutral-900">${p.price}</p>
+                <p className="font-bold text-neutral-900">₹{p.price}</p>
               </div>
             ))}
           </div>

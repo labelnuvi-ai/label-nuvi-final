@@ -81,7 +81,7 @@ export default function ShopPage() {
         <div className="flex flex-wrap items-center gap-4 text-xs font-label">
           {/* Price Range Filter Slider */}
           <div className="flex items-center space-x-3 bg-white px-4 py-2.5 rounded-full border border-neutral-200/60">
-            <span className="text-[#706C66] text-[10px] tracking-wider uppercase font-semibold">Max: ${maxPrice}</span>
+            <span className="text-[#706C66] text-[10px] tracking-wider uppercase font-semibold">Max: ₹{maxPrice}</span>
             <input
               type="range"
               min="100"

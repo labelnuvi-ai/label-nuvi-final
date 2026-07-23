@@ -304,11 +304,11 @@ export default function AdminProductsPage() {
                   <td className="px-6 py-4 font-semibold text-neutral-900">
                     {prod.salePrice ? (
                       <div className="flex space-x-2">
-                        <span className="text-black font-bold">${prod.salePrice}</span>
-                        <span className="text-neutral-400 line-through">${prod.price}</span>
+                        <span className="text-black font-bold">₹{prod.salePrice}</span>
+                        <span className="text-neutral-400 line-through">₹{prod.price}</span>
                       </div>
                     ) : (
-                      <span>${prod.price}</span>
+                      <span>₹{prod.price}</span>
                     )}
                   </td>
                   <td className="px-6 py-4">

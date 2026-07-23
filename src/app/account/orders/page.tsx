@@ -79,7 +79,7 @@ export default function MyOrdersPage() {
                   <span className="bg-green-100 text-green-800 text-[10px] uppercase font-bold px-3 py-1 rounded-full">
                     {order.status}
                   </span>
-                  <span className="text-xs font-bold text-neutral-900">${order.total.toFixed(2)}</span>
+                  <span className="text-xs font-bold text-neutral-900">₹{order.total.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -94,7 +94,7 @@ export default function MyOrdersPage() {
                       <p className="text-neutral-500 uppercase text-[10px]">
                         Color: {item.color} | Size: {item.size} | Qty: {item.quantity}
                       </p>
-                      <p className="font-semibold text-neutral-900 mt-1">${item.unitPrice.toFixed(2)}</p>
+                      <p className="font-semibold text-neutral-900 mt-1">₹{item.unitPrice.toFixed(2)}</p>
                     </div>
                   </div>
                 ))}

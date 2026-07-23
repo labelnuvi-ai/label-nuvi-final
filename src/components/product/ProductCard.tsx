@@ -84,7 +84,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </h3>
           </Link>
           <div className="text-[11px] font-label font-semibold text-[#1A1A1A] mt-0.5">
-            ${(product.salePrice || product.price).toFixed(2)}
+            ₹{(product.salePrice || product.price).toFixed(2)}
           </div>
         </div>
 

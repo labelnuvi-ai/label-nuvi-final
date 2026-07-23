@@ -108,10 +108,10 @@ export function QuickViewModal() {
                 </div>
 
                 <div className="text-lg font-bold text-neutral-900">
-                  ${(selectedProduct.salePrice || selectedProduct.price).toFixed(2)}
+                  ₹{(selectedProduct.salePrice || selectedProduct.price).toFixed(2)}
                   {selectedProduct.salePrice && (
                     <span className="ml-2 text-sm text-neutral-400 line-through font-normal">
-                      ${selectedProduct.price.toFixed(2)}
+                      ₹{selectedProduct.price.toFixed(2)}
                     </span>
                   )}
                 </div>

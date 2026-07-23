@@ -13,7 +13,7 @@ const LOCAL_CMS_HERO = {
 
 export default function CMSPage() {
   const [heroData, setHeroData] = useState(LOCAL_CMS_HERO);
-  const [announcementText, setAnnouncementText] = useState("COMPLIMENTARY SHIPPING ON ORDERS ABOVE $300");
+  const [announcementText, setAnnouncementText] = useState("COMPLIMENTARY SHIPPING ON ORDERS ABOVE ₹300");
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {

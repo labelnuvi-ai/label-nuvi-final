@@ -89,7 +89,7 @@ export function CartDrawer() {
               {remainingForFreeShipping > 0 ? (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-[10px] uppercase tracking-[0.2em] text-[#C8A46B]">
-                    <span>ADD ${remainingForFreeShipping.toFixed(2)} FOR COMPLIMENTARY EXPRESS SHIPPING</span>
+                    <span>ADD ₹{remainingForFreeShipping.toFixed(2)} FOR COMPLIMENTARY EXPRESS SHIPPING</span>
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
                   <div className="w-full h-1 bg-neutral-800 rounded-full overflow-hidden">
@@ -151,7 +151,7 @@ export function CartDrawer() {
                           Color: {item.selectedColor.name} | Size: {item.selectedSize}
                         </p>
                         <p className="text-xs font-label font-semibold text-[#1A1A1A]">
-                          ${(item.product.salePrice || item.product.price).toFixed(2)}
+                          ₹{(item.product.salePrice || item.product.price).toFixed(2)}
                         </p>
                       </div>
 
@@ -182,7 +182,7 @@ export function CartDrawer() {
 
             {/* Summary & Checkout Button */}
             {items.length > 0 && (
-              <div className="p-6 bg-white border-t border-neutral-200 space-y-4 shadow-luxury-lg">
+              <div className="p-6 bg-[#FFFFFF] border-t border-neutral-200 space-y-4 shadow-luxury-lg">
                 <div>
                   {appliedCoupon ? (
                     <div className="flex items-center justify-between p-3 bg-[#FAF8F5] border border-[#C8A46B]/50 rounded-xl text-xs text-[#1A1A1A]">
@@ -222,21 +222,21 @@ export function CartDrawer() {
                 <div className="space-y-2 text-xs font-label text-[#706C66] tracking-wider">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span className="font-bold text-[#1A1A1A]">${subtotal.toFixed(2)}</span>
+                    <span className="font-bold text-[#1A1A1A]">₹{subtotal.toFixed(2)}</span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-green-700">
                       <span>Discount ({appliedCoupon?.code})</span>
-                      <span>-${discount.toFixed(2)}</span>
+                      <span>-₹{discount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span>Estimated Shipping</span>
-                    <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
+                    <span>{shipping === 0 ? "FREE" : `₹${shipping.toFixed(2)}`}</span>
                   </div>
                   <div className="flex justify-between pt-3 border-t border-neutral-200 text-sm font-bold text-[#1A1A1A]">
                     <span>Total Amount</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                   </div>
                 </div>
 

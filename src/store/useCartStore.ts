@@ -6,7 +6,7 @@ import { fetchCartDb, syncCartDb } from "@/lib/supabase/db";
 const COUPONS: Coupon[] = [
   { code: "NUVI10", discountPercent: 10, description: "10% Off Atelier Pieces" },
   { code: "ATELIER20", discountPercent: 20, description: "20% Off Atelier Pieces" },
-  { code: "COUTURE50", discountFlat: 50, minSpend: 300, description: "$50 Off Couture Orders above $300" }
+  { code: "COUTURE50", discountFlat: 50, minSpend: 300, description: "₹50 Off Couture Orders above ₹300" }
 ];
 
 interface CartState {

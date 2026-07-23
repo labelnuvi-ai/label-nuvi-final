@@ -86,7 +86,7 @@ export default function CartPage() {
                         Color: {item.selectedColor.name} | Size: {item.selectedSize}
                       </p>
                       <p className="text-xs font-bold text-neutral-900 mt-2">
-                        ${(item.product.salePrice || item.product.price).toFixed(2)}
+                        ₹{(item.product.salePrice || item.product.price).toFixed(2)}
                       </p>
                     </div>
 
@@ -110,7 +110,7 @@ export default function CartPage() {
                       </div>
 
                       <span className="text-xs font-bold text-neutral-900">
-                        Item Total: ${((item.product.salePrice || item.product.price) * item.quantity).toFixed(2)}
+                        Item Total: ₹{((item.product.salePrice || item.product.price) * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -129,21 +129,21 @@ export default function CartPage() {
               <div className="space-y-3 text-xs text-neutral-600 tracking-wider">
                 <div className="flex justify-between">
                   <span>Bag Subtotal</span>
-                  <span className="font-bold text-neutral-900">${subtotal.toFixed(2)}</span>
+                  <span className="font-bold text-neutral-900">₹{subtotal.toFixed(2)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-700">
                     <span>Discount Promo</span>
-                    <span>-${discount.toFixed(2)}</span>
+                    <span>-₹{discount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>Express Shipping</span>
-                  <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
+                  <span>{shipping === 0 ? "FREE" : `₹${shipping.toFixed(2)}`}</span>
                 </div>
                 <div className="flex justify-between pt-3 border-t border-neutral-200 text-base font-bold text-neutral-900">
                   <span>Total Due</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>₹{total.toFixed(2)}</span>
                 </div>
               </div>
 

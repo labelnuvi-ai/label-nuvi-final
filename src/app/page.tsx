@@ -135,7 +135,7 @@ export default function HomePage() {
                   <Link href={`/product/${product.slug}`} className="block text-xs font-bold uppercase truncate tracking-wide text-neutral-800 hover:text-black">
                     {product.name}
                   </Link>
-                  <div className="text-xs font-semibold text-neutral-900">${(product.salePrice || product.price).toFixed(2)}</div>
+                  <div className="text-xs font-semibold text-neutral-900">₹{(product.salePrice || product.price).toFixed(2)}</div>
                 </div>
               </div>
             );
@@ -225,7 +225,7 @@ export default function HomePage() {
                   {product.name}
                 </Link>
                 <p className="text-xs text-neutral-500 line-clamp-2">{product.subtitle}</p>
-                <div className="text-sm font-bold text-neutral-900 pt-2">${(product.salePrice || product.price).toFixed(2)}</div>
+                <div className="text-sm font-bold text-neutral-900 pt-2">₹{(product.salePrice || product.price).toFixed(2)}</div>
               </div>
             </div>
           );

@@ -142,15 +142,15 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
               {product.salePrice ? (
                 <>
                   <span className="text-2xl font-label font-bold text-neutral-900">
-                    ${product.salePrice.toFixed(2)}
+                    ₹{product.salePrice.toFixed(2)}
                   </span>
                   <span className="text-sm font-label text-neutral-400 line-through">
-                    ${product.price.toFixed(2)}
+                    ₹{product.price.toFixed(2)}
                   </span>
                 </>
               ) : (
                 <span className="text-2xl font-label font-bold text-neutral-900">
-                  ${product.price.toFixed(2)}
+                  ₹{product.price.toFixed(2)}
                 </span>
               )}
             </div>
@@ -270,7 +270,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                 <div className="mt-3 text-neutral-600 space-y-3 font-sans font-light leading-relaxed">
                   <div className="flex items-start space-x-2">
                     <Truck className="w-4 h-4 text-neutral-400 mt-0.5" />
-                    <p>Complimentary global express shipping on all couture orders above $300.</p>
+                    <p>Complimentary global express shipping on all couture orders above ₹300.</p>
                   </div>
                   <div className="flex items-start space-x-2">
                     <RotateCcw className="w-4 h-4 text-neutral-400 mt-0.5" />
