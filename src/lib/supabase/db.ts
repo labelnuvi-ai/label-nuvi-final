@@ -82,9 +82,43 @@ export async function fetchCartDb(userId: string): Promise<CartItem[]> {
     return [];
   }
 
+  // Fetch Supabase products
+  let dbProducts: Product[] = [];
+  try {
+    const { data: productsData } = await supabase.from("products").select("*");
+    if (productsData) {
+      dbProducts = productsData.map((row) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        subtitle: row.subtitle,
+        description: row.description,
+        price: Number(row.price),
+        salePrice: row.sale_price ? Number(row.sale_price) : undefined,
+        isNew: row.is_new,
+        isBestseller: row.is_bestseller,
+        isSoldOut: row.is_sold_out,
+        images: row.images || ["/images/product-dress-front.jpg"],
+        colors: row.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
+        sizes: row.sizes || ["S", "M"],
+        categoryId: row.category_id,
+        categoryName: row.category_name || "Dresses",
+        rating: Number(row.rating || 5.0),
+        reviewsCount: Number(row.reviews_count || 0),
+        createdAt: row.created_at,
+        details: row.details || ["Dry clean only"],
+        fabricCare: row.fabric_care || ["Dry clean only"],
+      }));
+    }
+  } catch (pErr) {
+    console.error("Error fetching products during cart load:", pErr);
+  }
+
+  const allProducts = [...dbProducts, ...PRODUCTS];
+
   const cartItems: CartItem[] = [];
   (cartData || []).forEach((dbItem) => {
-    const product = PRODUCTS.find((p) => p.id === dbItem.product_id);
+    const product = allProducts.find((p) => p.id === dbItem.product_id);
     if (product) {
       cartItems.push({
         id: dbItem.id,
