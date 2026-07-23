@@ -21,6 +21,10 @@ export default function AdminLayout({
         data: { user },
       } = await supabase.auth.getUser();
 
+      console.log("AUTH USER", user);
+      console.log("AUTH USER ID", user?.id);
+      console.log("AUTH EMAIL", user?.email);
+
       if (!user) {
         router.push("/login");
         return;
@@ -32,6 +36,10 @@ export default function AdminLayout({
           .select("role")
           .eq("id", user.id)
           .single();
+
+        console.log("PROFILE", profile);
+        console.log("PROFILE ROLE", profile?.role);
+        console.log("PROFILE ERROR", error);
 
         console.log("User ID:", user.id);
         console.log("Profile:", profile);
