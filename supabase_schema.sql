@@ -143,6 +143,8 @@ CREATE TABLE IF NOT EXISTS orders (
   total DECIMAL(10, 2) NOT NULL,
   tracking_number TEXT,
   payment_method TEXT NOT NULL,
+  payment_status TEXT DEFAULT 'Pending' NOT NULL,
+  payment_id TEXT,
   shipping_name TEXT NOT NULL,
   shipping_address_line1 TEXT NOT NULL,
   shipping_address_line2 TEXT,

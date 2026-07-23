@@ -25,6 +25,20 @@ export default function CheckoutPage() {
   const shipping = getShippingFee();
   const total = getTotal();
 
+  const loadRazorpay = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -36,47 +50,97 @@ export default function CheckoutPage() {
       const { data: { user } } = await supabase.auth.getUser();
 
       const orderNumber = "NUVI-" + Math.floor(10000 + Math.random() * 90000);
-      const newOrder = {
-        orderNumber,
-        date: new Date().toISOString().split("T")[0],
-        status: "Processing",
-        subtotal,
-        discount,
-        shipping,
-        total,
-        trackingNumber: null,
-        paymentMethod: paymentMethod === "stripe" ? "Stripe / Card" : paymentMethod === "razorpay" ? "Razorpay / UPI" : "Cash on Delivery",
-        shippingAddress: {
-          id: "addr-temp",
-          label: "Shipping Address",
-          fullName,
-          addressLine1: address,
-          addressLine2: "",
-          city,
-          state: "NY",
-          postalCode,
-          country: "United States",
-          phone: "+1 (212) 555-0198",
-          isDefault: true,
-        },
-        items: items.map((item, idx) => ({
-          id: `oi-${idx}`,
-          productId: item.product.id,
-          productName: item.product.name,
-          productImage: item.product.images[0] || "/images/product-dress-front.jpg",
-          color: item.selectedColor.name,
-          size: item.selectedSize,
-          unitPrice: item.product.salePrice || item.product.price,
-          quantity: item.quantity,
-        })),
+      const isPrepaid = paymentMethod === "stripe" || paymentMethod === "razorpay";
+
+      const placeOrderWithDetails = async (paymentId: string | null = null) => {
+        const newOrder = {
+          orderNumber,
+          date: new Date().toISOString().split("T")[0],
+          status: "Processing",
+          subtotal,
+          discount,
+          shipping,
+          total,
+          trackingNumber: null,
+          paymentMethod: isPrepaid ? (paymentMethod === "stripe" ? "Stripe / Card" : "Razorpay / UPI") : "Cash on Delivery",
+          paymentStatus: isPrepaid ? "Paid" : "Pending",
+          paymentId: paymentId,
+          shippingAddress: {
+            id: "addr-temp",
+            label: "Shipping Address",
+            fullName,
+            addressLine1: address,
+            addressLine2: "",
+            city,
+            state: "NY",
+            postalCode,
+            country: "United States",
+            phone: "+1 (212) 555-0198",
+            isDefault: true,
+          },
+          items: items.map((item, idx) => ({
+            id: `oi-${idx}`,
+            productId: item.product.id,
+            productName: item.product.name,
+            productImage: item.product.images[0] || "/images/product-dress-front.jpg",
+            color: item.selectedColor.name,
+            size: item.selectedSize,
+            unitPrice: item.product.salePrice || item.product.price,
+            quantity: item.quantity,
+          })),
+        };
+
+        await createOrderDb(user ? user.id : null, newOrder as any);
+        await clearCart();
+        router.push("/checkout/success?orderNumber=" + orderNumber);
       };
 
-      await createOrderDb(user ? user.id : null, newOrder as any);
-      await clearCart();
-      router.push("/checkout/success?orderNumber=" + orderNumber);
+      if (isPrepaid) {
+        const loaded = await loadRazorpay();
+        if (!loaded) {
+          throw new Error("Razorpay SDK failed to load. Please check your internet connection.");
+        }
+
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_placeholder",
+          amount: Math.round(total * 100), // in cents
+          currency: "USD",
+          name: "LABEL NUVI",
+          description: `Atelier Order Checkout ${orderNumber}`,
+          image: "/images/hero-portrait.jpg",
+          handler: async function (response: any) {
+            try {
+              setIsSubmitting(true);
+              await placeOrderWithDetails(response.razorpay_payment_id);
+            } catch (err: any) {
+              alert("Payment succeeded but order creation failed: " + err.message);
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+          prefill: {
+            name: fullName,
+            email: email,
+            contact: "+12125550198"
+          },
+          theme: {
+            color: "#1a1a1a"
+          },
+          modal: {
+            ondismiss: function() {
+              setIsSubmitting(false);
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        // COD placement
+        await placeOrderWithDetails();
+      }
     } catch (err: any) {
       alert("Checkout placement failed: " + err.message);
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -207,10 +271,10 @@ export default function CheckoutPage() {
                   <CreditCard className="w-5 h-5 text-[#1A1A1A] stroke-[1.2]" />
                   <div>
                     <span className="text-xs font-label font-bold uppercase tracking-wider block text-[#1A1A1A]">
-                      Stripe Gateway (Global Credit / Debit Card)
+                      Prepaid Gateway (Credit / Debit Card)
                     </span>
                     <span className="text-[11px] font-sans text-neutral-500">
-                      Visa, Mastercard, Amex, Discover
+                      Visa, Mastercard, Amex, Discover via Razorpay Checkout
                     </span>
                   </div>
                 </div>
@@ -229,7 +293,7 @@ export default function CheckoutPage() {
                   <Sparkles className="w-5 h-5 text-[#C8A46B] stroke-[1.2]" />
                   <div>
                     <span className="text-xs font-label font-bold uppercase tracking-wider block text-[#1A1A1A]">
-                      Razorpay Gateway (Global & Instant NetBanking)
+                      Razorpay Gateway (UPI & NetBanking)
                     </span>
                     <span className="text-[11px] font-sans text-neutral-500">
                       UPI, Instant NetBanking, Wallet & Global Cards
@@ -283,45 +347,54 @@ export default function CheckoutPage() {
                     <h4 className="font-medium text-[#1A1A1A] uppercase line-clamp-1">{item.product.name}</h4>
                     <p className="text-[#706C66] text-[10px] font-label uppercase">Size: {item.selectedSize} | Qty: {item.quantity}</p>
                   </div>
-                  <span className="text-xs font-label font-bold">${((item.product.salePrice || item.product.price) * item.quantity).toFixed(2)}</span>
+                  <span className="text-xs font-bold text-neutral-900">${((item.product.salePrice || item.product.price) * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
 
-            <div className="space-y-2.5 text-xs font-label text-[#706C66] tracking-wider border-t border-neutral-200 pt-5">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span className="font-bold text-[#1A1A1A]">${subtotal.toFixed(2)}</span>
+            {/* Gift wrapper selector */}
+            <div className="space-y-2 pt-4 border-t border-neutral-100">
+              <label className="text-[10px] font-label uppercase tracking-widest text-[#706C66] block">
+                ATELIER GIFT NOTE (OPTIONAL)
+              </label>
+              <textarea
+                value={giftNote}
+                onChange={(e) => setGiftNote(e.target.value)}
+                placeholder="Include a handwritten message on our signature cream cardstock..."
+                rows={2}
+                className="bg-[#FAF8F5] text-xs font-sans p-4 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black resize-none"
+              />
+            </div>
+
+            {/* Receipt calculation */}
+            <div className="space-y-3.5 border-t border-neutral-100 pt-4 text-xs font-label">
+              <div className="flex justify-between text-[#706C66]">
+                <span>CART VALUE</span>
+                <span>${subtotal.toFixed(2)}</span>
               </div>
               {discount > 0 && (
-                <div className="flex justify-between text-green-700">
-                  <span>Discount</span>
+                <div className="flex justify-between text-green-700 font-bold">
+                  <span>DISCOUNT CODE APPLIED</span>
                   <span>-${discount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span>Express Courier Shipping</span>
-                <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
+              <div className="flex justify-between text-[#706C66]">
+                <span>EXPRESS COURIER DELIVERY</span>
+                <span>{shipping === 0 ? "COMPLIMENTARY" : `$${shipping.toFixed(2)}`}</span>
               </div>
-              <div className="flex justify-between pt-4 border-t border-neutral-200 text-lg font-serif-luxury font-light text-[#1A1A1A]">
-                <span>Total Payment</span>
-                <span className="font-bold font-label">${total.toFixed(2)}</span>
+              <div className="flex justify-between text-base text-black font-bold pt-2 border-t border-neutral-100 font-serif-luxury">
+                <span>TOTAL DUE</span>
+                <span>${total.toFixed(2)}</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#1A1A1A] text-[#FAF8F5] text-xs font-label uppercase tracking-[0.25em] py-4.5 font-medium rounded-full hover:bg-[#C8A46B] transition-all duration-500 flex items-center justify-center space-x-2 shadow-luxury-md transform hover:-translate-y-0.5 disabled:opacity-50"
+              className="w-full bg-[#1A1A1A] hover:bg-[#C8A46B] text-white text-xs uppercase tracking-[0.25em] py-4.5 font-semibold rounded-full transition-colors flex items-center justify-center space-x-2 disabled:bg-neutral-300"
             >
-              {isSubmitting ? (
-                <span>PROCESSING ATELIER ORDER...</span>
-              ) : (
-                <>
-                  <span>PLACE ORDER (${total.toFixed(2)})</span>
-                  <ArrowRight className="w-4 h-4 stroke-[1.2]" />
-                </>
-              )}
+              <span>{isSubmitting ? "PROCESSING TRANSACTION..." : "AUTHORIZE PAYMENT"}</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>

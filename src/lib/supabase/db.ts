@@ -176,6 +176,8 @@ export async function createOrderDb(userId: string | null, order: Order) {
     total: order.total,
     tracking_number: order.trackingNumber,
     payment_method: order.paymentMethod,
+    payment_status: (order as any).paymentStatus || "Pending",
+    payment_id: (order as any).paymentId || null,
     shipping_name: order.shippingAddress.fullName,
     shipping_address_line1: order.shippingAddress.addressLine1,
     shipping_address_line2: order.shippingAddress.addressLine2 || "",
