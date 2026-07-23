@@ -69,11 +69,11 @@ export function Header() {
       <header
         className={`sticky top-0 z-40 transition-all duration-700 ${
           isScrolled
-            ? "glass-header shadow-luxury-xs py-4"
-            : "bg-[#FAF8F5]/90 backdrop-blur-md py-6"
+            ? "glass-header shadow-luxury-xs py-3 sm:py-4"
+            : "bg-[#FAF8F5]/90 backdrop-blur-md py-4 sm:py-6"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-8 lg:px-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-16 flex items-center justify-between">
           {/* Left Navigation */}
           <div className="flex items-center space-x-8">
             <button
@@ -107,14 +107,14 @@ export function Header() {
           </div>
 
           {/* Center Brandmark */}
-          <Link href="/" className="text-center group">
-            <span className="text-5xl font-serif-luxury tracking-[0.5em] text-[#1A1A1A] font-medium uppercase transition-transform duration-700 group-hover:scale-[1.02] block pl-[0.5em]">
+          <Link href="/" className="text-center group shrink-0">
+            <span className="text-lg sm:text-3xl lg:text-5xl font-serif-luxury tracking-[0.15em] sm:tracking-[0.35em] lg:tracking-[0.5em] text-[#1A1A1A] font-medium uppercase transition-transform duration-700 group-hover:scale-[1.02] block pl-[0.15em] sm:pl-[0.35em] lg:pl-[0.5em] whitespace-nowrap">
               LABEL NUVI
             </span>
           </Link>
 
           {/* Right Icons */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-3 sm:space-x-6">
             <button
               onClick={openSearch}
               className="p-1 text-[#1A1A1A] hover:text-[#C8A46B] transition-colors"
@@ -150,7 +150,7 @@ export function Header() {
               aria-label="Open Bag"
             >
               <ShoppingBag className="w-4 h-4 stroke-[1.2]" />
-              <span className="ml-1.5 text-[10px] font-label font-medium text-[#1A1A1A]">
+              <span className="ml-1 text-[10px] font-label font-medium text-[#1A1A1A]">
                 ({itemCount})
               </span>
             </button>
