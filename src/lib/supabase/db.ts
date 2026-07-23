@@ -84,9 +84,17 @@ export async function fetchCartDb(userId: string): Promise<CartItem[]> {
   // Fetch Supabase products
   let dbProducts: Product[] = [];
   try {
-    const { data: productsData } = await supabase.from("products").select("*");
+    const { data: productsData } = await supabase.from("products").select(`
+      *,
+      categories (
+        name
+      ),
+      collections (
+        title
+      )
+    `);
     if (productsData) {
-      dbProducts = productsData.map((row) => ({
+      dbProducts = productsData.map((row: any) => ({
         id: row.id,
         name: row.name,
         slug: row.slug,
@@ -101,7 +109,9 @@ export async function fetchCartDb(userId: string): Promise<CartItem[]> {
         colors: row.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
         sizes: row.sizes || ["S", "M"],
         categoryId: row.category_id,
-        categoryName: row.category_name || "Dresses",
+        categoryName: row.categories?.name || "Dresses",
+        collectionId: row.collection_id || undefined,
+        collectionName: row.collections?.title || undefined,
         rating: Number(row.rating || 5.0),
         reviewsCount: Number(row.reviews_count || 0),
         createdAt: row.created_at,

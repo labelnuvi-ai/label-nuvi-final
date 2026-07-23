@@ -13,10 +13,18 @@ export function useProducts() {
     try {
       const supabase = createClient();
       
-      // Fetch Products
+      // Fetch Products with joined category and collection names
       const { data: prodData, error: prodError } = await supabase
         .from("products")
-        .select("*")
+        .select(`
+          *,
+          categories (
+            name
+          ),
+          collections (
+            title
+          )
+        `)
         .order("created_at", { ascending: false });
 
       // Fetch Categories
@@ -31,7 +39,7 @@ export function useProducts() {
 
       if (!prodError && prodData) {
         setProducts(
-          prodData.map((row) => ({
+          prodData.map((row: any) => ({
             id: row.id,
             name: row.name,
             slug: row.slug,
@@ -46,8 +54,9 @@ export function useProducts() {
             colors: row.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
             sizes: row.sizes || ["S", "M"],
             categoryId: row.category_id,
-            categoryName: row.category_name || "Dresses",
+            categoryName: row.categories?.name || "Dresses",
             collectionId: row.collection_id || undefined,
+            collectionName: row.collections?.title || undefined,
             rating: Number(row.rating || 5.0),
             reviewsCount: Number(row.reviews_count || 0),
             createdAt: row.created_at,
@@ -113,7 +122,6 @@ export function useProducts() {
       colors: productData.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
       sizes: productData.sizes || ["S", "M"],
       category_id: productData.categoryId || "cat-1",
-      category_name: productData.categoryName || "Dresses",
       collection_id: productData.collectionId || null,
       rating: 5.0,
       reviews_count: 0,
@@ -152,7 +160,6 @@ export function useProducts() {
     if (productData.colors !== undefined) dbRow.colors = productData.colors;
     if (productData.sizes !== undefined) dbRow.sizes = productData.sizes;
     if (productData.categoryId !== undefined) dbRow.category_id = productData.categoryId;
-    if (productData.categoryName !== undefined) dbRow.category_name = productData.categoryName;
     if (productData.collectionId !== undefined) dbRow.collection_id = productData.collectionId;
     if (productData.details !== undefined) dbRow.details = productData.details;
     if (productData.fabricCare !== undefined) dbRow.fabric_care = productData.fabricCare;
