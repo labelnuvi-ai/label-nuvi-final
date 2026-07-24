@@ -213,7 +213,8 @@ export function useProducts() {
     console.log("===================================");
 
     if (error) {
-      console.error("Error inserting product:", error);
+      alert(JSON.stringify(error, null, 2));
+      console.error(error);
       throw error;
     }
 
