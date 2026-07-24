@@ -199,11 +199,18 @@ export function useProducts() {
       updated_at: now,
     };
 
+    console.log("========== PRODUCT INSERT ==========");
+    console.log(dbRow);
+
     const { data, error } = await supabase
       .from("products")
       .insert(dbRow)
       .select()
       .single();
+
+    console.log("INSERT RESULT:", data);
+    console.log("INSERT ERROR:", error);
+    console.log("===================================");
 
     if (error) {
       console.error("Error inserting product:", error);
