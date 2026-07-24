@@ -199,7 +199,7 @@ export function useProducts() {
     const supabase = createClient();
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
     const { error } = await supabase.storage
-      .from("product-images")
+      .from("products")
       .upload(fileName, file, {
         cacheControl: "3600",
         upsert: false
@@ -211,7 +211,7 @@ export function useProducts() {
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from("product-images")
+      .from("products")
       .getPublicUrl(fileName);
 
     return publicUrl;
