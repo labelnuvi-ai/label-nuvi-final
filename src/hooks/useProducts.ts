@@ -31,9 +31,13 @@ export function useProducts() {
             image_url
           ),
           product_variants (
+            sku,
+            size,
+            size_value,
             color_name,
             color_hex,
-            size_value
+            stock,
+            price
           )
         `)
         .order("created_at", { ascending: false });
@@ -97,7 +101,8 @@ export function useProducts() {
             if (row.product_variants && row.product_variants.length > 0) {
               const sizeSet = new Set<string>();
               row.product_variants.forEach((v: any) => {
-                if (v.size_value) sizeSet.add(v.size_value);
+                const sVal = v.size || v.size_value;
+                if (sVal) sizeSet.add(sVal);
               });
               if (sizeSet.size > 0) {
                 sizes = Array.from(sizeSet);
@@ -240,9 +245,13 @@ export function useProducts() {
       for (const s of sizes) {
         variantRows.push({
           product_id: id,
-          color_name: c.name,
-          color_hex: c.hex,
+          sku: crypto.randomUUID(),
+          size: s,
           size_value: s,
+          color_name: c.name,
+          color_hex: c.hex || "#000000",
+          stock: 10,
+          price: productData.salePrice || productData.price || 0,
         });
       }
     }
@@ -314,9 +323,13 @@ export function useProducts() {
           for (const s of sizes) {
             variantRows.push({
               product_id: productId,
-              color_name: c.name,
-              color_hex: c.hex,
+              sku: crypto.randomUUID(),
+              size: s,
               size_value: s,
+              color_name: c.name,
+              color_hex: c.hex || "#000000",
+              stock: 10,
+              price: productData.salePrice || productData.price || 0,
             });
           }
         }
