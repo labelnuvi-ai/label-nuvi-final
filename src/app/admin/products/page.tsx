@@ -22,12 +22,18 @@ export default function AdminProductsPage() {
   useEffect(() => {
     if (categories.length > 0) {
       setCategoriesList(categories);
+      if (!selectedCategoryId) {
+        setSelectedCategoryId(categories[0].id);
+      }
     }
   }, [categories]);
 
   useEffect(() => {
     if (collections.length > 0) {
       setCollectionsList(collections);
+      if (!selectedCollectionId) {
+        setSelectedCollectionId(collections[0].id);
+      }
     }
   }, [collections]);
 
@@ -40,8 +46,8 @@ export default function AdminProductsPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("cat-1");
-  const [selectedCollectionId, setSelectedCollectionId] = useState("col-1");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedCollectionId, setSelectedCollectionId] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("/images/product-dress-front.jpg");
@@ -90,8 +96,8 @@ export default function AdminProductsPage() {
     setName("");
     setPrice("");
     setSalePrice("");
-    setSelectedCategoryId(categoriesList[0]?.id || "cat-1");
-    setSelectedCollectionId(collectionsList[0]?.id || "col-1");
+    setSelectedCategoryId(categoriesList[0]?.id || "");
+    setSelectedCollectionId(collectionsList[0]?.id || "");
     setSubtitle("");
     setDescription("");
     setImageUrl("/images/product-dress-front.jpg");
@@ -107,8 +113,8 @@ export default function AdminProductsPage() {
     setName(prod.name);
     setPrice(String(prod.price));
     setSalePrice(prod.salePrice ? String(prod.salePrice) : "");
-    setSelectedCategoryId(prod.categoryId);
-    setSelectedCollectionId(prod.collectionId || "col-1");
+    setSelectedCategoryId(prod.categoryId || categoriesList[0]?.id || "");
+    setSelectedCollectionId(prod.collectionId || collectionsList[0]?.id || "");
     setSubtitle(prod.subtitle || "");
     setDescription(prod.description || "");
     setImageUrl(prod.images[0] || "/images/product-dress-front.jpg");
