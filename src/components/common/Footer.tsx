@@ -95,13 +95,12 @@ export function Footer() {
         </div>
 
         {/* Contact info */}
-        <div className="space-y-2 pt-2 border-t border-neutral-100">
+        <div className="space-y-2 pt-2 border-t border-neutral-100 text-xs font-sans text-neutral-600">
           <h4 className="text-xs font-bold uppercase tracking-wider text-black">
-            Contact
+            Contact Us
           </h4>
-          <p className="text-xs text-neutral-600 font-sans">
-            Contact information goes here for follow-up if necessary. <Link href="/contact" className="underline font-bold text-black">Get in touch</Link>
-          </p>
+          <p>Email: <a href="mailto:support@labelnuvi.in" className="underline font-semibold text-black hover:text-[#C8A46B]">support@labelnuvi.in</a></p>
+          <p>Website: <a href="https://www.labelnuvi.in" target="_blank" rel="noopener noreferrer" className="underline font-semibold text-black hover:text-[#C8A46B]">www.labelnuvi.in</a></p>
         </div>
 
         {/* Copyright */}
