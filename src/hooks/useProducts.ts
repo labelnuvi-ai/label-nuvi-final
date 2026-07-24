@@ -175,7 +175,7 @@ export function useProducts() {
 
   const addProduct = async (productData: Partial<Product>) => {
     const supabase = createClient();
-    const id = productData.id || "prod-" + Math.floor(100000 + Math.random() * 900000);
+    const id = productData.id || crypto.randomUUID();
     const now = new Date().toISOString();
 
     // Payload containing ONLY existing products table columns
