@@ -28,7 +28,10 @@ export function useProducts() {
             title
           ),
           product_images (
-            image_url
+            image_url,
+            alt_text,
+            sort_order,
+            display_order
           ),
           product_variants (
             sku,
@@ -228,6 +231,8 @@ export function useProducts() {
       const imageRows = productData.images.map((url, idx) => ({
         product_id: id,
         image_url: url,
+        alt_text: productData.name || "Product Image",
+        sort_order: idx,
         display_order: idx,
       }));
       try {
@@ -304,6 +309,8 @@ export function useProducts() {
         const imageRows = productData.images.map((url, idx) => ({
           product_id: productId,
           image_url: url,
+          alt_text: productData.name || "Product Image",
+          sort_order: idx,
           display_order: idx,
         }));
         await supabase.from("product_images").insert(imageRows);
