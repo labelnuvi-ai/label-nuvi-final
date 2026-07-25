@@ -42,8 +42,9 @@ export function useProducts() {
 
         setProducts(
           prodData.map((row: any) => {
-            console.log("IMAGE URL", row.image_url);
             const mainImageUrl = row.image_url || "/images/product-dress-front.jpg";
+            console.log("RAW DB:", row.image_url);
+            console.log("MAIN:", mainImageUrl);
 
             return {
               id: row.id,
