@@ -101,12 +101,27 @@ export default function CheckoutPage() {
           throw new Error("Razorpay SDK failed to load. Please check your internet connection.");
         }
 
+        // Call backend route to create Razorpay Order & receive order_id
+        const orderRes = await fetch("/api/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: total }),
+        });
+
+        const orderData = await orderRes.json();
+        if (!orderRes.ok || !orderData.id) {
+          throw new Error(orderData.error || "Failed to initialize payment order.");
+        }
+
+        console.log("RAZORPAY ORDER INITIALIZED:", orderData.id);
+
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_placeholder",
-          amount: Math.round(total * 100), // in cents
-          currency: "USD",
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_THfIFK3GvrkoeY",
+          amount: orderData.amount,
+          currency: orderData.currency || "INR",
           name: "LABEL NUVI",
           description: `Atelier Order Checkout ${orderNumber}`,
+          order_id: orderData.id,
           image: "/images/hero-portrait.jpg",
           handler: async function (response: any) {
             try {
@@ -121,7 +136,7 @@ export default function CheckoutPage() {
           prefill: {
             name: fullName,
             email: email,
-            contact: "+12125550198"
+            contact: "+919876543210"
           },
           theme: {
             color: "#1a1a1a"
