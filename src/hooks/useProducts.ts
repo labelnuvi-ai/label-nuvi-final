@@ -371,22 +371,29 @@ export function useProducts() {
 
   const uploadProductImage = async (file: File): Promise<string> => {
     const supabase = createClient();
+
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-    const { error } = await supabase.storage
+
+    console.log("Uploading:", fileName);
+
+    const result = await supabase.storage
       .from("products")
       .upload(fileName, file, {
         cacheControl: "3600",
-        upsert: false
+        upsert: false,
       });
 
-    if (error) {
-      console.error("Error uploading image:", error);
-      throw error;
+    console.log("UPLOAD RESULT:", result);
+
+    if (result.error) {
+      throw result.error;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("products")
-      .getPublicUrl(fileName);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("products").getPublicUrl(fileName);
+
+    console.log("PUBLIC URL:", publicUrl);
 
     return publicUrl;
   };
