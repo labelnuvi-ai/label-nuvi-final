@@ -10,7 +10,7 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("featured");
   const [gridCols, setGridCols] = useState<number>(4);
-  const [maxPrice, setMaxPrice] = useState<number>(1500);
+  const [maxPrice, setMaxPrice] = useState<number>(14999);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -81,15 +81,15 @@ export default function ShopPage() {
         <div className="flex flex-wrap items-center gap-4 text-xs font-label">
           {/* Price Range Filter Slider */}
           <div className="flex items-center space-x-3 bg-white px-4 py-2.5 rounded-full border border-neutral-200/60">
-            <span className="text-[#706C66] text-[10px] tracking-wider uppercase font-semibold">Max: ₹{maxPrice}</span>
+            <span className="text-[#706C66] text-[10px] tracking-wider uppercase font-semibold">Max: ₹{maxPrice.toLocaleString("en-IN")}</span>
             <input
               type="range"
-              min="100"
-              max="1500"
-              step="50"
+              min="999"
+              max="14999"
+              step="100"
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="accent-black w-24 h-1 rounded-lg bg-neutral-200 appearance-none cursor-pointer"
+              className="accent-black w-28 h-1 rounded-lg bg-neutral-200 appearance-none cursor-pointer"
             />
           </div>
 
