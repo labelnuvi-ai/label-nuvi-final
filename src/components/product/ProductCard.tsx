@@ -30,8 +30,9 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
     addItem(product, product.colors[0], product.sizes[0] || "S", 1);
     setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 1200);
   };
+
+  console.log("IMAGE URL:", product.imageUrl);
 
   return (
     <motion.div
