@@ -102,7 +102,7 @@ export function useProducts() {
             if (row.product_variants && row.product_variants.length > 0) {
               const sizeSet = new Set<string>();
               row.product_variants.forEach((v: any) => {
-                const sVal = v.size || v.size_value;
+                const sVal = v.size;
                 if (sVal) sizeSet.add(sVal);
               });
               if (sizeSet.size > 0) {

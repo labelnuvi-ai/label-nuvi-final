@@ -22,7 +22,7 @@ INSERT INTO products (id, name, slug, subtitle, description, price, sale_price, 
 ('prod-4', 'Celine Cashmere Atelier Trench', 'celine-cashmere-atelier-trench', 'Hand-Stitched Double-Faced Wool Coat', 'Floor-sweeping length with exaggerated storm flaps and hand-turned lapels. Made from double-faced cashmere wool blend for weightless warmth.', 1250.00, NULL, true, false, 'cat-4', 'col-1', 4.9, 15, '2026-07-12 00:00:00+00');
 
 -- 4. product_images Table
-INSERT INTO product_images (product_id, image_url, display_order) VALUES
+INSERT INTO product_images (product_id, image_url, sort_order) VALUES
 ('prod-1', '/images/product-dress-front.jpg', 1),
 ('prod-1', '/images/product-dress-back.jpg', 2),
 ('prod-1', '/images/category-dresses.jpg', 3),
