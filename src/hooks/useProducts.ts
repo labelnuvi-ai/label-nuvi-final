@@ -38,8 +38,11 @@ export function useProducts() {
         .select("*");
 
       if (!prodError && prodData) {
+        console.log("SUPABASE ROW", prodData[0]);
+
         setProducts(
           prodData.map((row: any) => {
+            console.log("IMAGE URL", row.image_url);
             const mainImageUrl = row.image_url || "/images/product-dress-front.jpg";
 
             return {
@@ -69,6 +72,11 @@ export function useProducts() {
             };
           })
         );
+
+        console.log("FINAL PRODUCTS", prodData.map((r: any) => ({
+          name: r.name,
+          image: r.image_url
+        })));
       }
 
       if (!catError && catData) {
