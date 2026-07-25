@@ -4,7 +4,7 @@ import { useState, use, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingBag,
   Heart,
@@ -17,6 +17,8 @@ import {
   Plus,
   Minus,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { ProductSize, ProductColor } from "@/types";
 import { useCartStore } from "@/store/useCartStore";
@@ -39,6 +41,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   const [selectedSize, setSelectedSize] = useState<ProductSize>("S");
   const [activeAccordion, setActiveAccordion] = useState<string | null>("fabric");
   const [addedSuccess, setAddedSuccess] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const addItem = useCartStore((s) => s.addItem);
   const { toggleWishlist, isInWishlist } = useWishlistStore();
@@ -93,26 +96,82 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             <span className="text-black font-semibold truncate max-w-[200px]">{product.name}</span>
           </div>
 
-          <div className="flex flex-col gap-6">
-            {((product.images && product.images.length > 0) ? product.images : [product.imageUrl]).map((image, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                className="relative aspect-[4/5] w-full rounded-[24px] overflow-hidden bg-neutral-100 shadow-luxury-xs border border-neutral-200/20"
-              >
-                <Image
-                  src={image}
-                  alt={`${product.name} lookbook detail ${idx + 1}`}
-                  fill
-                  priority={idx === 0}
-                  className="object-cover object-center"
-                />
-              </motion.div>
-            ))}
-          </div>
+          {(() => {
+            const galleryImages = (product.images && product.images.length > 0) ? product.images : [product.imageUrl];
+            return (
+              <div className="space-y-4">
+                {/* Main Hero Viewport with Animated Transitions & Chevron Controls */}
+                <div className="relative aspect-[4/5] w-full rounded-[24px] overflow-hidden bg-neutral-100 shadow-luxury-xs border border-neutral-200/20 group">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeImageIndex}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                      className="relative w-full h-full"
+                    >
+                      <Image
+                        src={galleryImages[activeImageIndex] || galleryImages[0]}
+                        alt={`${product.name} detail view ${activeImageIndex + 1}`}
+                        fill
+                        priority
+                        className="object-cover object-center"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+
+                  {galleryImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setActiveImageIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1))}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-black shadow-md hover:bg-white transition-all z-10"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="w-5 h-5 stroke-[1.5]" />
+                      </button>
+                      <button
+                        onClick={() => setActiveImageIndex((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1))}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-black shadow-md hover:bg-white transition-all z-10"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="w-5 h-5 stroke-[1.5]" />
+                      </button>
+
+                      {/* Pagination Indicator Pill */}
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-label text-white tracking-widest z-10">
+                        {activeImageIndex + 1} / {galleryImages.length}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Side-by-Side Thumbnail Bar for Swiping / Clicking */}
+                {galleryImages.length > 1 && (
+                  <div className="flex items-center space-x-3 overflow-x-auto pb-2 scrollbar-none">
+                    {galleryImages.map((image, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`relative w-24 h-28 rounded-2xl overflow-hidden border-2 shrink-0 transition-all duration-300 ${
+                          activeImageIndex === idx
+                            ? "border-[#1A1A1A] scale-105 shadow-luxury-xs"
+                            : "border-neutral-200/80 opacity-70 hover:opacity-100"
+                        }`}
+                      >
+                        <Image
+                          src={image}
+                          alt={`${product.name} thumbnail ${idx + 1}`}
+                          fill
+                          className="object-cover object-center"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Column: Sticky Purchase Controls Panel (5 cols) */}
