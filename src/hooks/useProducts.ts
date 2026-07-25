@@ -40,43 +40,91 @@ export function useProducts() {
       if (!prodError && prodData) {
         console.log("SUPABASE ROW", prodData[0]);
 
-        setProducts(
-          prodData.map((row: any) => {
-            const mainImageUrl = row.image_url || "/images/product-dress-front.jpg";
-            console.log("RAW DB:", row.image_url);
-            console.log("MAIN:", mainImageUrl);
+        const dbMapped = prodData.map((row: any) => {
+          const mainImageUrl = row.image_url || "/images/product-dress-front.jpg";
+          console.log("RAW DB:", row.image_url);
+          console.log("MAIN:", mainImageUrl);
 
-            return {
-              id: row.id,
-              name: row.name,
-              slug: row.slug,
-              subtitle: row.subtitle || "Premium Drop Silhouette",
-              description: row.description || "Crafted from hand-selected luxurious materials.",
-              price: Number(row.price),
-              salePrice: row.sale_price ? Number(row.sale_price) : undefined,
-              isNew: row.is_new ?? true,
-              isBestseller: row.is_bestseller ?? false,
-              isSoldOut: row.is_sold_out ?? false,
-              imageUrl: mainImageUrl,
-              images: [mainImageUrl],
-              colors: Array.isArray(row.colors) ? row.colors : [{ name: "Ivory", hex: "#FAF8F5" }],
-              sizes: Array.isArray(row.sizes) ? row.sizes : ["S", "M"],
-              categoryId: row.category_id,
-              categoryName: row.categories?.name || "Dresses",
-              collectionId: row.collection_id || undefined,
-              collectionName: row.collections?.title || undefined,
-              rating: Number(row.rating || 5.0),
-              reviewsCount: Number(row.reviews_count || 0),
-              createdAt: row.created_at,
-              details: Array.isArray(row.details) ? row.details : ["Dry clean only"],
-              fabricCare: Array.isArray(row.fabric_care) ? row.fabric_care : ["Dry clean only"],
-            };
-          })
-        );
+          return {
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            subtitle: row.subtitle || "Premium Drop Silhouette",
+            description: row.description || "Crafted from hand-selected luxurious materials.",
+            price: Number(row.price),
+            salePrice: row.sale_price ? Number(row.sale_price) : undefined,
+            isNew: row.is_new ?? true,
+            isBestseller: row.is_bestseller ?? false,
+            isSoldOut: row.is_sold_out ?? false,
+            imageUrl: mainImageUrl,
+            images: [mainImageUrl],
+            colors: Array.isArray(row.colors) ? row.colors : [{ name: "Ivory", hex: "#FAF8F5" }],
+            sizes: Array.isArray(row.sizes) ? row.sizes : ["S", "M"],
+            categoryId: row.category_id,
+            categoryName: row.categories?.name || "Dresses",
+            collectionId: row.collection_id || undefined,
+            collectionName: row.collections?.title || undefined,
+            rating: Number(row.rating || 5.0),
+            reviewsCount: Number(row.reviews_count || 0),
+            createdAt: row.created_at,
+            details: Array.isArray(row.details) ? row.details : ["Dry clean only"],
+            fabricCare: Array.isArray(row.fabric_care) ? row.fabric_care : ["Dry clean only"],
+          };
+        });
 
-        console.log("FINAL PRODUCTS", prodData.map((r: any) => ({
+        const azureEclipseProduct: Product = {
+          id: "prod-azure-eclipse-001",
+          name: "Azure Eclipse Co-Ord Set",
+          slug: "azure-eclipse-co-ord-set",
+          subtitle: "Architectural Satin Evening Co-Ord",
+          description:
+            "A striking two-piece satin co-ord crafted for modern evening dressing. The structured cropped blazer features sculpted shoulders and a deep architectural neckline, paired with a high-waisted mini skirt finished with a subtle side slit. Designed to create a confident silhouette while maintaining effortless elegance.\n\nCut from premium high-shine satin with a fluid drape, Azure Eclipse transitions seamlessly from cocktail evenings to luxury resort occasions. Every detail is engineered to embody contemporary femininity with refined tailoring.",
+          price: 6999,
+          salePrice: undefined,
+          isNew: true,
+          isBestseller: true,
+          isSoldOut: false,
+          imageUrl: "/images/azure-eclipse-coord.jpg",
+          images: ["/images/azure-eclipse-coord.jpg"],
+          colors: [
+            { name: "Royal Azure", hex: "#0047AB" },
+            { name: "Atelier Gold", hex: "#C8A46B" },
+          ],
+          sizes: ["S", "M", "L"],
+          categoryId: "cat-dresses",
+          categoryName: "Dresses",
+          collectionId: "col-resort-26",
+          collectionName: "Resort '26",
+          rating: 5.0,
+          reviewsCount: 12,
+          createdAt: new Date().toISOString(),
+          details: [
+            "Two-piece coordinated set",
+            "Cropped blazer with structured shoulders",
+            "Deep plunge silhouette",
+            "High-rise mini skirt",
+            "Side slit detail",
+            "Regular fit",
+            "True to size",
+          ],
+          fabricCare: [
+            "Premium Satin Blend",
+            "Soft Inner Lining",
+            "Dry Clean Only",
+            "Steam on Low Heat",
+            "Do Not Bleach",
+            "Store on Hanger",
+          ],
+        };
+
+        const hasAzure = dbMapped.some((p: any) => p.slug === "azure-eclipse-co-ord-set");
+        const finalCatalog = hasAzure ? dbMapped : [azureEclipseProduct, ...dbMapped];
+
+        setProducts(finalCatalog);
+
+        console.log("FINAL PRODUCTS", finalCatalog.map((r: any) => ({
           name: r.name,
-          image: r.image_url
+          image: r.imageUrl
         })));
       }
 
