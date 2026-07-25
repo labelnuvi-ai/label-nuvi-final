@@ -233,7 +233,13 @@ export function useProducts() {
         sort_order: idx,
       }));
       try {
-        await supabase.from("product_images").insert(imageRows);
+        const { data, error } = await supabase
+          .from("product_images")
+          .insert(imageRows)
+          .select();
+
+        console.log("IMAGE INSERT", data);
+        console.log("IMAGE ERROR", error);
       } catch (err) {
         console.warn("Could not insert product_images:", err);
       }
@@ -308,7 +314,13 @@ export function useProducts() {
           alt_text: productData.name || "Product Image",
           sort_order: idx,
         }));
-        await supabase.from("product_images").insert(imageRows);
+        const { data, error } = await supabase
+          .from("product_images")
+          .insert(imageRows)
+          .select();
+
+        console.log("IMAGE INSERT", data);
+        console.log("IMAGE ERROR", error);
       } catch (err) {
         console.warn("Could not update product_images:", err);
       }
