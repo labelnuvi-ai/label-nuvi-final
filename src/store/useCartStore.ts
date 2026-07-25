@@ -2,12 +2,9 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { CartItem, Product, ProductColor, ProductSize, Coupon } from "@/types";
 import { fetchCartDb, syncCartDb } from "@/lib/supabase/db";
+import { useCouponStore, INITIAL_COUPONS } from "./useCouponStore";
 
-const COUPONS: Coupon[] = [
-  { code: "NUVI10", discountPercent: 10, description: "10% Off Atelier Pieces" },
-  { code: "ATELIER20", discountPercent: 20, description: "20% Off Atelier Pieces" },
-  { code: "COUTURE50", discountFlat: 50, minSpend: 300, description: "₹50 Off Couture Orders above ₹300" }
-];
+const COUPONS: Coupon[] = INITIAL_COUPONS;
 
 interface CartState {
   items: CartItem[];
@@ -127,15 +124,23 @@ export const useCartStore = create<CartState>()(
 
       applyCoupon: (code) => {
         const cleanCode = code.trim().toUpperCase();
-        const found = COUPONS.find((c) => c.code === cleanCode);
+        const found = useCouponStore.getState().getCouponByCode(cleanCode) || COUPONS.find((c) => c.code === cleanCode);
         if (!found) {
           return { success: false, message: "Invalid promo code" };
         }
+        if (found.status === "Inactive") {
+          return { success: false, message: "This coupon is currently inactive" };
+        }
+        const today = new Date().toISOString().split("T")[0];
+        if (found.validUntil && found.validUntil < today) {
+          return { success: false, message: "This coupon has expired" };
+        }
         const subtotal = get().getSubtotal();
-        if (found.minSpend && subtotal < found.minSpend) {
+        const minVal = found.minPurchase ?? found.minSpend ?? 0;
+        if (minVal > 0 && subtotal < minVal) {
           return {
             success: false,
-            message: `Minimum spend of $${found.minSpend} required for code ${found.code}`,
+            message: `Minimum purchase of ₹${minVal} required for code ${found.code}`,
           };
         }
         set({ appliedCoupon: found });
@@ -169,13 +174,20 @@ export const useCartStore = create<CartState>()(
         const coupon = get().appliedCoupon;
         if (!coupon) return 0;
         const subtotal = get().getSubtotal();
-        if (coupon.discountPercent) {
-          return (subtotal * coupon.discountPercent) / 100;
+
+        let discount = 0;
+        if (coupon.discountType === "percentage" || coupon.discountPercent !== undefined) {
+          const pct = coupon.discountValue ?? coupon.discountPercent ?? 0;
+          discount = (subtotal * pct) / 100;
+          if (coupon.maxDiscount && coupon.maxDiscount > 0) {
+            discount = Math.min(discount, coupon.maxDiscount);
+          }
+        } else if (coupon.discountType === "flat" || coupon.discountFlat !== undefined) {
+          const val = coupon.discountValue ?? coupon.discountFlat ?? 0;
+          discount = Math.min(val, subtotal);
         }
-        if (coupon.discountFlat) {
-          return Math.min(coupon.discountFlat, subtotal);
-        }
-        return 0;
+
+        return discount;
       },
 
       getShippingFee: () => {

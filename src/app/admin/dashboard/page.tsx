@@ -93,11 +93,18 @@ export default function AdminDashboardPage() {
 
         <div className="flex items-center space-x-3">
           <Link
+            href="/admin/coupons"
+            className="bg-amber-600 text-white text-xs uppercase tracking-widest px-4 py-3 font-semibold rounded-2xl flex items-center space-x-1.5 shadow-md hover:bg-amber-700 transition-colors"
+          >
+            <Sliders className="w-4 h-4" />
+            <span>MANAGE COUPONS</span>
+          </Link>
+          <Link
             href="/admin/cms"
             className="bg-[#111111] text-[#E6D5C3] text-xs uppercase tracking-widest px-4 py-3 font-semibold rounded-2xl flex items-center space-x-1.5 shadow-md"
           >
             <Sliders className="w-4 h-4" />
-            <span>MANAGE HOMEPAGE CMS</span>
+            <span>HOMEPAGE CMS</span>
           </Link>
           <Link
             href="/admin/products"

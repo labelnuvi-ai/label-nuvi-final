@@ -82,10 +82,20 @@ export interface CartItem {
 }
 
 export interface Coupon {
+  id?: string;
   code: string;
+  discountType: "percentage" | "flat";
+  discountValue: number;
   discountPercent?: number;
   discountFlat?: number;
+  minPurchase?: number;
   minSpend?: number;
+  maxDiscount?: number | null;
+  status: "Active" | "Inactive";
+  validFrom: string;
+  validUntil: string;
+  usageLimit: number;
+  usedCount?: number;
   description: string;
 }
 

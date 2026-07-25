@@ -3,13 +3,22 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Lock, CreditCard, Sparkles, ArrowRight, Truck } from "lucide-react";
+import { Lock, CreditCard, Sparkles, ArrowRight, Truck, Tag } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getSubtotal, getDiscountAmount, getShippingFee, getTotal, clearCart } =
-    useCartStore();
+  const {
+    items,
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon,
+    getSubtotal,
+    getDiscountAmount,
+    getShippingFee,
+    getTotal,
+    clearCart,
+  } = useCartStore();
 
   const [email, setEmail] = useState("victoria.sterling@vogue.com");
   const [fullName, setFullName] = useState("Victoria Sterling");
@@ -19,6 +28,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "razorpay" | "cod">("stripe");
   const [giftNote, setGiftNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutCouponInput, setCheckoutCouponInput] = useState("");
+  const [checkoutCouponError, setCheckoutCouponError] = useState("");
 
   const subtotal = getSubtotal();
   const discount = getDiscountAmount();
@@ -405,6 +416,57 @@ export default function CheckoutPage() {
               />
             </div>
 
+            {/* Promotional Code Section */}
+            <div className="space-y-2 pt-4 border-t border-neutral-100">
+              <label className="text-[10px] font-label uppercase tracking-widest text-[#706C66] block font-semibold">
+                PROMOTIONAL CODE
+              </label>
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-xs font-semibold text-emerald-900">
+                  <div className="flex items-center space-x-2">
+                    <Tag className="w-4 h-4 text-emerald-600" />
+                    <span>{appliedCoupon.code} Applied ({appliedCoupon.discountValue ?? appliedCoupon.discountPercent}% OFF)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeCoupon()}
+                    className="text-[11px] font-label text-neutral-500 hover:text-red-600 underline uppercase"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={checkoutCouponInput}
+                    onChange={(e) => setCheckoutCouponInput(e.target.value.toUpperCase())}
+                    placeholder="ENTER CODE (e.g. NUVI99)"
+                    className="bg-[#FAF8F5] text-xs font-mono font-bold p-3 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black uppercase tracking-wider"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!checkoutCouponInput.trim()) return;
+                      const res = applyCoupon(checkoutCouponInput);
+                      if (!res.success) {
+                        setCheckoutCouponError(res.message);
+                      } else {
+                        setCheckoutCouponError("");
+                        setCheckoutCouponInput("");
+                      }
+                    }}
+                    className="bg-black text-white text-xs font-label uppercase tracking-wider px-5 rounded-2xl hover:bg-neutral-800 transition-colors shrink-0 font-semibold"
+                  >
+                    Apply
+                  </button>
+                </div>
+              )}
+              {checkoutCouponError && (
+                <p className="text-[10px] font-label text-red-600 mt-1">{checkoutCouponError}</p>
+              )}
+            </div>
+
             {/* Receipt calculation */}
             <div className="space-y-3.5 border-t border-neutral-100 pt-4 text-xs font-label">
               <div className="flex justify-between text-[#706C66]">
@@ -413,7 +475,7 @@ export default function CheckoutPage() {
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-700 font-bold">
-                  <span>DISCOUNT CODE APPLIED</span>
+                  <span>DISCOUNT APPLIED ({appliedCoupon?.code})</span>
                   <span>-₹{discount.toFixed(2)}</span>
                 </div>
               )}
