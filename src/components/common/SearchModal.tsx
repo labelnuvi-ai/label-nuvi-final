@@ -88,7 +88,7 @@ export function SearchModal() {
                       className="flex items-center space-x-4 p-2 rounded-2xl hover:bg-neutral-100/60 transition-all border border-transparent hover:border-neutral-200/50"
                     >
                       <div className="relative w-12 h-16 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/20 shrink-0">
-                        <Image src={p.images[0]} alt={p.name} fill className="object-cover" />
+                        <Image src={p.imageUrl || p.images[0]} alt={p.name} fill className="object-cover" />
                       </div>
                       <div className="flex-1 text-xs">
                         <h4 className="font-bold text-neutral-950 uppercase">{p.name}</h4>

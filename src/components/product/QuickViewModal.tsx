@@ -66,7 +66,7 @@ export function QuickViewModal() {
             {/* Left: Gallery Column */}
             <div className="md:w-1/2 bg-neutral-100 relative min-h-[300px] md:min-h-full">
               <Image
-                src={selectedProduct.images[activeImageIndex] || selectedProduct.images[0]}
+                src={selectedProduct.imageUrl || selectedProduct.images[activeImageIndex] || selectedProduct.images[0]}
                 alt={selectedProduct.name}
                 fill
                 className="object-cover"

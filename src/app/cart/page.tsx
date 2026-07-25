@@ -60,7 +60,7 @@ export default function CartPage() {
                 <div key={item.id} className="py-6 first:pt-0 last:pb-0 flex space-x-4 sm:space-x-6">
                   <div className="relative w-24 h-32 bg-neutral-100 rounded-2xl overflow-hidden shrink-0">
                     <Image
-                      src={item.product.images[0]}
+                      src={item.product.imageUrl || item.product.images[0]}
                       alt={item.product.name}
                       fill
                       className="object-cover"

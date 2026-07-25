@@ -82,7 +82,7 @@ export default function CheckoutPage() {
             id: `oi-${idx}`,
             productId: item.product.id,
             productName: item.product.name,
-            productImage: item.product.images[0] || "/images/product-dress-front.jpg",
+            productImage: item.product.imageUrl || item.product.images[0] || "/images/product-dress-front.jpg",
             color: item.selectedColor.name,
             size: item.selectedSize,
             unitPrice: item.product.salePrice || item.product.price,
@@ -341,7 +341,7 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <div key={item.id} className="flex space-x-4 items-center">
                   <div className="relative w-14 h-18 bg-[#FAF8F5] rounded-[12px] overflow-hidden shrink-0 border border-neutral-200/50">
-                    <Image src={item.product.images[0]} alt={item.product.name} fill className="object-cover" />
+                    <Image src={item.product.imageUrl || item.product.images[0]} alt={item.product.name} fill className="object-cover" />
                   </div>
                   <div className="flex-1 text-xs font-serif-luxury">
                     <h4 className="font-medium text-[#1A1A1A] uppercase line-clamp-1">{item.product.name}</h4>
