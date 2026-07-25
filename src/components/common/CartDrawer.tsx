@@ -127,7 +127,7 @@ export function CartDrawer() {
                   <div key={item.id} className="pt-6 first:pt-0 flex space-x-4">
                     <div className="relative w-20 h-28 bg-white rounded-[14px] overflow-hidden shrink-0 border border-neutral-200/60">
                       <Image
-                        src={item.product.imageUrl || item.product.images[0]}
+                        src={item.product.imageUrl}
                         alt={item.product.name}
                         fill
                         className="object-cover"

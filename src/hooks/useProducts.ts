@@ -136,7 +136,7 @@ export function useProducts() {
       description: productData.description || "Crafted from hand-selected luxurious materials.",
       price: productData.price,
       sale_price: productData.salePrice || null,
-      image_url: productData.imageUrl || (productData.images && productData.images[0]) || "/images/product-dress-front.jpg",
+      image_url: productData.imageUrl || "/images/product-dress-front.jpg",
       rating: productData.rating ?? 5.0,
       reviews_count: productData.reviewsCount ?? 0,
       is_new: productData.isNew ?? true,
@@ -191,8 +191,6 @@ export function useProducts() {
     if (productData.collectionId !== undefined) dbRow.collection_id = productData.collectionId;
     if (productData.imageUrl !== undefined) {
       dbRow.image_url = productData.imageUrl;
-    } else if (productData.images !== undefined && productData.images.length > 0) {
-      dbRow.image_url = productData.images[0];
     }
 
     const { data, error } = await supabase

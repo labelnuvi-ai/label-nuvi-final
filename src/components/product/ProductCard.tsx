@@ -22,7 +22,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const { toggleWishlist, isInWishlist } = useWishlistStore();
 
   const isLiked = isInWishlist(product.id);
-  const mainImage = product.imageUrl || product.images[0] || "/images/product-dress-front.jpg";
+  const mainImage = product.imageUrl || "/images/product-dress-front.jpg";
   const secondaryImage = mainImage;
 
   const handleQuickAdd = (e: React.MouseEvent) => {

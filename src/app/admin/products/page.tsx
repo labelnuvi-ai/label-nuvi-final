@@ -117,7 +117,7 @@ export default function AdminProductsPage() {
     setSelectedCollectionId(prod.collectionId || collectionsList[0]?.id || "");
     setSubtitle(prod.subtitle || "");
     setDescription(prod.description || "");
-    setImageUrl(prod.imageUrl || prod.images[0] || "/images/product-dress-front.jpg");
+    setImageUrl(prod.imageUrl || "/images/product-dress-front.jpg");
     setSelectedSizes(prod.sizes || ["S", "M"]);
     setIsNew(prod.isNew ?? true);
     setIsBestseller(prod.isBestseller ?? false);
@@ -166,7 +166,7 @@ export default function AdminProductsPage() {
       categoryName: matchedCat ? matchedCat.name : "Dresses",
       collectionId: selectedCollectionId,
       collectionName: matchedCol ? matchedCol.title : undefined,
-      images: [imageUrl, "/images/product-dress-back.jpg"],
+      imageUrl: imageUrl,
       colors: [
         { name: "Ivory", hex: "#FAF8F5" },
         { name: "Atelier Gold", hex: "#C8A46B" },
@@ -295,7 +295,7 @@ export default function AdminProductsPage() {
                 <tr key={prod.id} className="hover:bg-neutral-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="relative w-12 h-16 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/50">
-                      <Image src={prod.imageUrl || prod.images[0]} alt={prod.name} fill className="object-cover" />
+                      <Image src={prod.imageUrl} alt={prod.name} fill className="object-cover" />
                     </div>
                   </td>
                   <td className="px-6 py-4">
