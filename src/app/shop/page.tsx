@@ -43,7 +43,7 @@ export default function ShopPage() {
           SHOP ALL SILHOUETTES
         </h1>
         <p className="text-xs text-[#706C66] font-sans font-light max-w-lg mx-auto leading-relaxed">
-          Liquid Mulberry silk satins, double-breasted flax suiting, second-skin sculpt bodysuits, and virgin cashmere outerwear.
+          Discover timeless silhouettes crafted with premium fabrics, refined tailoring, and effortless elegance for every occasion.
         </p>
       </div>
 
