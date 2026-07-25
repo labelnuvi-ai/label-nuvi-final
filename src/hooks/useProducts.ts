@@ -13,7 +13,7 @@ export function useProducts() {
     try {
       const supabase = createClient();
       
-      // Fetch Products with joined categories, collections, product_images, and product_variants
+      // Fetch Products with joined categories, collections, and product_variants (image stored in products.image_url)
       let prodData: any[] | null = null;
       let prodError: any = null;
 
@@ -27,11 +27,6 @@ export function useProducts() {
           collections (
             title
           ),
-          product_images (
-            image_url,
-            alt_text,
-            sort_order
-          ),
           product_variants (
             sku,
             size,
@@ -44,7 +39,7 @@ export function useProducts() {
         .order("created_at", { ascending: false });
 
       if (resWithRelations.error) {
-        // Fallback query if product_images / product_variants tables are absent
+        // Fallback query if product_variants table is absent
         const resSimple = await supabase
           .from("products")
           .select(`
@@ -77,10 +72,8 @@ export function useProducts() {
       if (!prodError && prodData) {
         setProducts(
           prodData.map((row: any) => {
-            const relImages = row.product_images?.map((i: any) => i.image_url);
-            const images = (relImages && relImages.length > 0)
-              ? relImages
-              : (Array.isArray(row.images) && row.images.length > 0 ? row.images : ["/images/product-dress-front.jpg"]);
+            const mainImageUrl = row.image_url || (Array.isArray(row.images) && row.images[0]) || "/images/product-dress-front.jpg";
+            const images = [mainImageUrl];
 
             let colors = row.colors;
             if (row.product_variants && row.product_variants.length > 0) {
@@ -124,6 +117,7 @@ export function useProducts() {
               isNew: row.is_new ?? true,
               isBestseller: row.is_bestseller ?? false,
               isSoldOut: row.is_sold_out ?? false,
+              imageUrl: mainImageUrl,
               images,
               colors,
               sizes,
@@ -206,6 +200,7 @@ export function useProducts() {
       description: productData.description || "Crafted from hand-selected luxurious materials.",
       price: productData.price,
       sale_price: productData.salePrice || null,
+      image_url: (productData.images && productData.images[0]) || productData.imageUrl || "/images/product-dress-front.jpg",
       rating: productData.rating ?? 5.0,
       reviews_count: productData.reviewsCount ?? 0,
       is_new: productData.isNew ?? true,
@@ -233,27 +228,6 @@ export function useProducts() {
       alert(JSON.stringify(error, null, 2));
       console.error(error);
       throw error;
-    }
-
-    // Insert product images into product_images
-    if (productData.images && productData.images.length > 0) {
-      const imageRows = productData.images.map((url, idx) => ({
-        product_id: id,
-        image_url: url,
-        alt_text: productData.name || "Product Image",
-        sort_order: idx,
-      }));
-      try {
-        const { data, error } = await supabase
-          .from("product_images")
-          .insert(imageRows)
-          .select();
-
-        console.log("IMAGE INSERT", data);
-        console.log("IMAGE ERROR", error);
-      } catch (err) {
-        console.warn("Could not insert product_images:", err);
-      }
     }
 
     // Insert colors/sizes into product_variants
@@ -302,6 +276,11 @@ export function useProducts() {
     if (productData.isSoldOut !== undefined) dbRow.is_sold_out = productData.isSoldOut;
     if (productData.categoryId !== undefined) dbRow.category_id = productData.categoryId;
     if (productData.collectionId !== undefined) dbRow.collection_id = productData.collectionId;
+    if (productData.images !== undefined && productData.images.length > 0) {
+      dbRow.image_url = productData.images[0];
+    } else if (productData.imageUrl !== undefined) {
+      dbRow.image_url = productData.imageUrl;
+    }
 
     const { data, error } = await supabase
       .from("products")
@@ -313,28 +292,6 @@ export function useProducts() {
     if (error) {
       console.error("Error updating product:", error);
       throw error;
-    }
-
-    // Update product_images table if images are updated
-    if (productData.images !== undefined && productData.images.length > 0) {
-      try {
-        await supabase.from("product_images").delete().eq("product_id", productId);
-        const imageRows = productData.images.map((url, idx) => ({
-          product_id: productId,
-          image_url: url,
-          alt_text: productData.name || "Product Image",
-          sort_order: idx,
-        }));
-        const { data, error } = await supabase
-          .from("product_images")
-          .insert(imageRows)
-          .select();
-
-        console.log("IMAGE INSERT", data);
-        console.log("IMAGE ERROR", error);
-      } catch (err) {
-        console.warn("Could not update product_images:", err);
-      }
     }
 
     // Update product_variants table if colors or sizes are updated
@@ -370,11 +327,7 @@ export function useProducts() {
   const deleteProduct = async (productId: string) => {
     const supabase = createClient();
 
-    // Delete associated product_images and product_variants if present
-    try {
-      await supabase.from("product_images").delete().eq("product_id", productId);
-    } catch (err) {}
-
+    // Delete associated product_variants if present
     try {
       await supabase.from("product_variants").delete().eq("product_id", productId);
     } catch (err) {}
