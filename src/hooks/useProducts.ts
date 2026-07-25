@@ -13,11 +13,8 @@ export function useProducts() {
     try {
       const supabase = createClient();
       
-      // Fetch Products with joined categories, collections, and product_variants (image stored in products.image_url)
-      let prodData: any[] | null = null;
-      let prodError: any = null;
-
-      const resWithRelations = await supabase
+      // Fetch Products directly from products table joined with categories & collections
+      const { data: prodData, error: prodError } = await supabase
         .from("products")
         .select(`
           *,
@@ -26,38 +23,9 @@ export function useProducts() {
           ),
           collections (
             title
-          ),
-          product_variants (
-            sku,
-            size,
-            color_name,
-            color_hex,
-            stock,
-            price
           )
         `)
         .order("created_at", { ascending: false });
-
-      if (resWithRelations.error) {
-        // Fallback query if product_variants table is absent
-        const resSimple = await supabase
-          .from("products")
-          .select(`
-            *,
-            categories (
-              name
-            ),
-            collections (
-              title
-            )
-          `)
-          .order("created_at", { ascending: false });
-        prodData = resSimple.data;
-        prodError = resSimple.error;
-      } else {
-        prodData = resWithRelations.data;
-        prodError = resWithRelations.error;
-      }
 
       // Fetch Categories
       const { data: catData, error: catError } = await supabase
@@ -72,39 +40,7 @@ export function useProducts() {
       if (!prodError && prodData) {
         setProducts(
           prodData.map((row: any) => {
-            const mainImageUrl = row.image_url || (Array.isArray(row.images) && row.images[0]) || "/images/product-dress-front.jpg";
-            const images = [mainImageUrl];
-
-            let colors = row.colors;
-            if (row.product_variants && row.product_variants.length > 0) {
-              const colorMap = new Map();
-              row.product_variants.forEach((v: any) => {
-                if (v.color_name && !colorMap.has(v.color_name)) {
-                  colorMap.set(v.color_name, { name: v.color_name, hex: v.color_hex || "#FAF8F5" });
-                }
-              });
-              if (colorMap.size > 0) {
-                colors = Array.from(colorMap.values());
-              }
-            }
-            if (!colors || colors.length === 0) {
-              colors = [{ name: "Ivory", hex: "#FAF8F5" }];
-            }
-
-            let sizes = row.sizes;
-            if (row.product_variants && row.product_variants.length > 0) {
-              const sizeSet = new Set<string>();
-              row.product_variants.forEach((v: any) => {
-                const sVal = v.size;
-                if (sVal) sizeSet.add(sVal);
-              });
-              if (sizeSet.size > 0) {
-                sizes = Array.from(sizeSet);
-              }
-            }
-            if (!sizes || sizes.length === 0) {
-              sizes = ["S", "M"];
-            }
+            const mainImageUrl = row.image_url || "/images/product-dress-front.jpg";
 
             return {
               id: row.id,
@@ -118,9 +54,9 @@ export function useProducts() {
               isBestseller: row.is_bestseller ?? false,
               isSoldOut: row.is_sold_out ?? false,
               imageUrl: mainImageUrl,
-              images,
-              colors,
-              sizes,
+              images: [mainImageUrl],
+              colors: Array.isArray(row.colors) ? row.colors : [{ name: "Ivory", hex: "#FAF8F5" }],
+              sizes: Array.isArray(row.sizes) ? row.sizes : ["S", "M"],
               categoryId: row.category_id,
               categoryName: row.categories?.name || "Dresses",
               collectionId: row.collection_id || undefined,
@@ -189,7 +125,7 @@ export function useProducts() {
     const id = productData.id || crypto.randomUUID();
     const now = new Date().toISOString();
 
-    // Payload containing ONLY existing products table columns
+    // Insert payload targeting ONLY the existing products table schema
     const dbRow = {
       id,
       category_id: productData.categoryId || null,
@@ -200,7 +136,7 @@ export function useProducts() {
       description: productData.description || "Crafted from hand-selected luxurious materials.",
       price: productData.price,
       sale_price: productData.salePrice || null,
-      image_url: (productData.images && productData.images[0]) || productData.imageUrl || "/images/product-dress-front.jpg",
+      image_url: productData.imageUrl || (productData.images && productData.images[0]) || "/images/product-dress-front.jpg",
       rating: productData.rating ?? 5.0,
       reviews_count: productData.reviewsCount ?? 0,
       is_new: productData.isNew ?? true,
@@ -229,29 +165,6 @@ export function useProducts() {
       console.error(error);
       throw error;
     }
-
-    // Insert colors/sizes into product_variants
-    const colors = productData.colors || [{ name: "Ivory", hex: "#FAF8F5" }];
-    const sizes = productData.sizes || ["S", "M"];
-    const variantRows: any[] = [];
-    for (const c of colors) {
-      for (const s of sizes) {
-        variantRows.push({
-          product_id: id,
-          sku: crypto.randomUUID(),
-          size: s,
-          color_name: c.name,
-          color_hex: c.hex || "#000000",
-          stock: 10,
-          price: productData.salePrice || productData.price || 0,
-        });
-      }
-    }
-    try {
-      await supabase.from("product_variants").insert(variantRows);
-    } catch (err) {
-      console.warn("Could not insert product_variants:", err);
-    }
     
     await loadCatalog();
     return data;
@@ -276,10 +189,10 @@ export function useProducts() {
     if (productData.isSoldOut !== undefined) dbRow.is_sold_out = productData.isSoldOut;
     if (productData.categoryId !== undefined) dbRow.category_id = productData.categoryId;
     if (productData.collectionId !== undefined) dbRow.collection_id = productData.collectionId;
-    if (productData.images !== undefined && productData.images.length > 0) {
-      dbRow.image_url = productData.images[0];
-    } else if (productData.imageUrl !== undefined) {
+    if (productData.imageUrl !== undefined) {
       dbRow.image_url = productData.imageUrl;
+    } else if (productData.images !== undefined && productData.images.length > 0) {
+      dbRow.image_url = productData.images[0];
     }
 
     const { data, error } = await supabase
@@ -294,43 +207,12 @@ export function useProducts() {
       throw error;
     }
 
-    // Update product_variants table if colors or sizes are updated
-    if (productData.colors !== undefined || productData.sizes !== undefined) {
-      try {
-        await supabase.from("product_variants").delete().eq("product_id", productId);
-        const colors = productData.colors || [{ name: "Standard", hex: "#000000" }];
-        const sizes = productData.sizes || ["Standard"];
-        const variantRows: any[] = [];
-        for (const c of colors) {
-          for (const s of sizes) {
-            variantRows.push({
-              product_id: productId,
-              sku: crypto.randomUUID(),
-              size: s,
-              color_name: c.name,
-              color_hex: c.hex || "#000000",
-              stock: 10,
-              price: productData.salePrice || productData.price || 0,
-            });
-          }
-        }
-        await supabase.from("product_variants").insert(variantRows);
-      } catch (err) {
-        console.warn("Could not update product_variants:", err);
-      }
-    }
-    
     await loadCatalog();
     return data;
   };
 
   const deleteProduct = async (productId: string) => {
     const supabase = createClient();
-
-    // Delete associated product_variants if present
-    try {
-      await supabase.from("product_variants").delete().eq("product_id", productId);
-    } catch (err) {}
 
     const { error } = await supabase
       .from("products")
