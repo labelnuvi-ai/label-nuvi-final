@@ -181,6 +181,17 @@ export function useProducts() {
 
   const addProduct = async (productData: Partial<Product>) => {
     const supabase = createClient();
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    console.log("==============");
+    console.log("SESSION:", session);
+    console.log("USER:", session?.user);
+    console.log("ROLE:", session?.user?.role);
+    console.log("==============");
+
     const id = productData.id || crypto.randomUUID();
     const now = new Date().toISOString();
 
