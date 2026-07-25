@@ -65,12 +65,34 @@ export function QuickViewModal() {
 
             {/* Left: Gallery Column */}
             <div className="md:w-1/2 bg-neutral-100 relative min-h-[300px] md:min-h-full">
-              <Image
-                src={selectedProduct.imageUrl || "/images/product-dress-front.jpg"}
-                alt={selectedProduct.name}
-                fill
-                className="object-cover"
-              />
+              {(() => {
+                const imageList = (selectedProduct.images && selectedProduct.images.length > 0) ? selectedProduct.images : [selectedProduct.imageUrl];
+                return (
+                  <>
+                    <Image
+                      src={imageList[activeImageIndex] || imageList[0]}
+                      alt={selectedProduct.name}
+                      fill
+                      className="object-cover"
+                    />
+                    {imageList.length > 1 && (
+                      <div className="absolute bottom-4 left-4 right-4 flex space-x-2 justify-center z-10">
+                        {imageList.map((img, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setActiveImageIndex(idx)}
+                            className={`w-12 h-14 relative rounded-md overflow-hidden border-2 transition-all ${
+                              activeImageIndex === idx ? "border-black shadow-md scale-105" : "border-white/60 opacity-80"
+                            }`}
+                          >
+                            <Image src={img} alt="thumb" fill className="object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Right: Info Column */}

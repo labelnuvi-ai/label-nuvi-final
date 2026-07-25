@@ -94,21 +94,24 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
           </div>
 
           <div className="flex flex-col gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              className="relative aspect-[4/5] w-full rounded-[24px] overflow-hidden bg-neutral-100 shadow-luxury-xs border border-neutral-200/20"
-            >
-              <Image
-                src={product.imageUrl || "/images/product-dress-front.jpg"}
-                alt={`${product.name} lookbook detail`}
-                fill
-                priority
-                className="object-cover object-center"
-              />
-            </motion.div>
+            {((product.images && product.images.length > 0) ? product.images : [product.imageUrl]).map((image, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                className="relative aspect-[4/5] w-full rounded-[24px] overflow-hidden bg-neutral-100 shadow-luxury-xs border border-neutral-200/20"
+              >
+                <Image
+                  src={image}
+                  alt={`${product.name} lookbook detail ${idx + 1}`}
+                  fill
+                  priority={idx === 0}
+                  className="object-cover object-center"
+                />
+              </motion.div>
+            ))}
           </div>
         </div>
 

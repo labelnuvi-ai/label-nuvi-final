@@ -22,8 +22,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const { toggleWishlist, isInWishlist } = useWishlistStore();
 
   const isLiked = isInWishlist(product.id);
-  const mainImage = product.imageUrl || "/images/product-dress-front.jpg";
-  const secondaryImage = mainImage;
+  const mainImage = product.imageUrl || (product.images && product.images[0]) || "/images/product-dress-front.jpg";
+  const secondaryImage = (product.images && product.images[1]) ? product.images[1] : mainImage;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -52,9 +52,9 @@ export function ProductCard({ product }: ProductCardProps) {
           className="relative w-full h-full"
         >
           <img
-            src={mainImage}
+            src={isHovered ? secondaryImage : mainImage}
             alt={product.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-all duration-500"
           />
         </motion.div>
 

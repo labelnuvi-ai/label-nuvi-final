@@ -57,7 +57,7 @@ export function useProducts() {
             isBestseller: row.is_bestseller ?? false,
             isSoldOut: row.is_sold_out ?? false,
             imageUrl: mainImageUrl,
-            images: [mainImageUrl],
+            images: Array.isArray(row.images) && row.images.length > 0 ? row.images : [mainImageUrl],
             colors: Array.isArray(row.colors) ? row.colors : [{ name: "Ivory", hex: "#FAF8F5" }],
             sizes: Array.isArray(row.sizes) ? row.sizes : ["S", "M"],
             categoryId: row.category_id,
