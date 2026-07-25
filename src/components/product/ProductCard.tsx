@@ -54,7 +54,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <img
             src={mainImage}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="w-full h-full object-cover"
           />
         </motion.div>
 
