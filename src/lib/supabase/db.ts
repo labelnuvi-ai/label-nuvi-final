@@ -133,7 +133,7 @@ export async function fetchCartDb(userId: string): Promise<CartItem[]> {
         id: dbItem.id,
         product,
         selectedColor: { name: dbItem.color_name, hex: dbItem.color_hex },
-        selectedSize: dbItem.size || dbItem.size_value,
+        selectedSize: dbItem.size,
         quantity: dbItem.quantity,
       });
     }
@@ -161,7 +161,7 @@ export async function syncCartDb(userId: string, items: CartItem[]) {
     product_id: item.product.id,
     color_name: item.selectedColor.name,
     color_hex: item.selectedColor.hex,
-    size_value: item.selectedSize,
+    size: item.selectedSize,
     quantity: item.quantity,
   }));
 
