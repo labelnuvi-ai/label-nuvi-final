@@ -116,7 +116,7 @@ export default function CheckoutPage() {
         console.log("RAZORPAY ORDER INITIALIZED:", orderData.id);
 
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_THfIFK3GvrkoeY",
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_THfqfIBWuZq5MG",
           amount: orderData.amount,
           currency: orderData.currency || "INR",
           name: "LABEL NUVI",
@@ -126,9 +126,28 @@ export default function CheckoutPage() {
           handler: async function (response: any) {
             try {
               setIsSubmitting(true);
+              
+              // Verify Payment Signature via Backend
+              const verifyRes = await fetch("/api/verify-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok || !verifyData.success) {
+                alert("Payment Verification Failed: " + (verifyData.error || "Invalid signature"));
+                return;
+              }
+
+              console.log("PAYMENT SIGNATURE VERIFIED:", verifyData);
               await placeOrderWithDetails(response.razorpay_payment_id);
             } catch (err: any) {
-              alert("Payment succeeded but order creation failed: " + err.message);
+              alert("Payment verification error: " + err.message);
             } finally {
               setIsSubmitting(false);
             }
@@ -149,6 +168,11 @@ export default function CheckoutPage() {
         };
 
         const rzp = new (window as any).Razorpay(options);
+        rzp.on("payment.failed", function (resp: any) {
+          console.error("Razorpay Payment Failed:", resp.error);
+          alert(`Payment Failed: ${resp.error.description || resp.error.reason}`);
+          setIsSubmitting(false);
+        });
         rzp.open();
       } else {
         // COD placement
