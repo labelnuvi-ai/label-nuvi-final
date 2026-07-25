@@ -35,7 +35,6 @@ export function useProducts() {
           product_variants (
             sku,
             size,
-            size_value,
             color_name,
             color_hex,
             stock,
@@ -250,7 +249,6 @@ export function useProducts() {
           product_id: id,
           sku: crypto.randomUUID(),
           size: s,
-          size_value: s,
           color_name: c.name,
           color_hex: c.hex || "#000000",
           stock: 10,
@@ -329,7 +327,6 @@ export function useProducts() {
               product_id: productId,
               sku: crypto.randomUUID(),
               size: s,
-              size_value: s,
               color_name: c.name,
               color_hex: c.hex || "#000000",
               stock: 10,

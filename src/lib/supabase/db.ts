@@ -133,7 +133,7 @@ export async function fetchCartDb(userId: string): Promise<CartItem[]> {
         id: dbItem.id,
         product,
         selectedColor: { name: dbItem.color_name, hex: dbItem.color_hex },
-        selectedSize: dbItem.size_value,
+        selectedSize: dbItem.size || dbItem.size_value,
         quantity: dbItem.quantity,
       });
     }
