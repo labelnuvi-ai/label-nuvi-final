@@ -51,12 +51,10 @@ export function ProductCard({ product }: ProductCardProps) {
           transition={{ duration: 0.8, ease: LUXURY_EASE }}
           className="relative w-full h-full"
         >
-          <Image
-            src={isHovered ? secondaryImage : mainImage}
+          <img
+            src={mainImage}
             alt={product.name}
-            fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            className="object-cover object-center"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         </motion.div>
 
