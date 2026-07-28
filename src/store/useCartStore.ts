@@ -123,17 +123,26 @@ export const useCartStore = create<CartState>()(
       },
 
       applyCoupon: (code) => {
+        if (!code || !code.trim()) {
+          return { success: false, message: "Please enter a valid promo code" };
+        }
+        if (get().items.length === 0) {
+          return { success: false, message: "Please add a product to cart first before applying a coupon" };
+        }
         const cleanCode = code.trim().toUpperCase();
-        const found = useCouponStore.getState().getCouponByCode(cleanCode) || COUPONS.find((c) => c.code === cleanCode);
+        const found =
+          useCouponStore.getState().getCouponByCode(cleanCode) ||
+          INITIAL_COUPONS.find((c) => c.code.trim().toUpperCase() === cleanCode);
+
         if (!found) {
-          return { success: false, message: "Invalid promo code" };
+          return { success: false, message: "Invalid promo code. Please try NUVI99, NUVI15, or NUVI10." };
         }
         if (found.status === "Inactive") {
-          return { success: false, message: "This coupon is currently inactive" };
+          return { success: false, message: "This promo code is currently inactive." };
         }
         const today = new Date().toISOString().split("T")[0];
         if (found.validUntil && found.validUntil < today) {
-          return { success: false, message: "This coupon has expired" };
+          return { success: false, message: "This promo code has expired." };
         }
         const subtotal = get().getSubtotal();
         const minVal = found.minPurchase ?? found.minSpend ?? 0;
@@ -144,7 +153,7 @@ export const useCartStore = create<CartState>()(
           };
         }
         set({ appliedCoupon: found });
-        return { success: true, message: `Promo code ${found.code} applied!` };
+        return { success: true, message: `Promo code ${found.code} applied successfully!` };
       },
 
       removeCoupon: () => set({ appliedCoupon: null }),
