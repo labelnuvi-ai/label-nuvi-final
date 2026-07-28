@@ -127,7 +127,7 @@ export default function CheckoutPage() {
         console.log("RAZORPAY ORDER INITIALIZED:", orderData.id);
 
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_THfqfIBWuZq5MG",
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_TIx1NIiRSdXUN3",
           amount: orderData.amount,
           currency: orderData.currency || "INR",
           name: "LABEL NUVI",
