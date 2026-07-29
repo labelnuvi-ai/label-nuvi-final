@@ -269,6 +269,87 @@ export async function createOrderDb(userId: string | null, order: any) {
     }
   }
 
+  // Asynchronously trigger automated transactional emails
+  try {
+    const { sendEmail } = await import("@/lib/email/sender");
+    const { orderConfirmationTemplate, paymentSuccessTemplate, adminNewOrderTemplate } = await import("@/lib/email/templates");
+
+    const formattedOrder: Order = {
+      id: orderId,
+      orderNumber: order.orderNumber,
+      date: orderRow.date,
+      status: orderRow.status as any,
+      items: (order.items || []).map((i: any, idx: number) => ({
+        id: `oi-${idx}`,
+        productId: i.productId,
+        productName: i.productName,
+        productImage: i.productImage || "/images/product-dress-front.jpg",
+        color: i.color || "Standard",
+        size: i.size,
+        unitPrice: Number(i.unitPrice || i.price || 0),
+        quantity: Number(i.quantity || 1),
+      })),
+      subtotal: orderRow.subtotal,
+      discount: orderRow.discount,
+      shipping: orderRow.shipping,
+      tax: orderRow.tax,
+      total: orderRow.total,
+      shippingAddress: {
+        id: "addr-" + orderId,
+        label: "Shipping Address",
+        fullName: orderRow.shipping_name,
+        email: orderRow.shipping_email,
+        phone: orderRow.shipping_phone,
+        addressLine1: orderRow.shipping_address_line1,
+        addressLine2: orderRow.shipping_address_line2,
+        city: orderRow.shipping_city,
+        state: orderRow.shipping_state,
+        postalCode: orderRow.shipping_postal_code,
+        country: orderRow.shipping_country,
+        isDefault: true,
+      },
+      paymentMethod: orderRow.payment_method,
+      paymentStatus: orderRow.payment_status as any,
+      paymentId: orderRow.payment_id,
+      razorpayOrderId: orderRow.razorpay_order_id,
+      razorpayPaymentId: orderRow.razorpay_payment_id,
+    };
+
+    const recipientEmail = orderRow.shipping_email || "client@labelnuvi.com";
+
+    // 1. Send Order Confirmation Email to Customer
+    sendEmail({
+      to: recipientEmail,
+      subject: `Order Confirmation - ${order.orderNumber} | LABEL NUVI Atelier`,
+      html: orderConfirmationTemplate(formattedOrder),
+      emailType: "order_confirmation",
+      metadata: { orderId, orderNumber: order.orderNumber },
+    });
+
+    // 2. Send Payment Success Email if Paid
+    if (orderRow.payment_status === "Paid") {
+      sendEmail({
+        to: recipientEmail,
+        subject: `Payment Successful - ${order.orderNumber} | LABEL NUVI`,
+        html: paymentSuccessTemplate(formattedOrder),
+        emailType: "payment_successful",
+        metadata: { orderId, orderNumber: order.orderNumber },
+      });
+    }
+
+    // 3. Send Admin Alert Email
+    const adminEmail = process.env.ADMIN_EMAIL || "concierge@labelnuvi.com";
+    sendEmail({
+      to: adminEmail,
+      subject: `[ADMIN ALERT] New Order ${order.orderNumber} Received`,
+      html: adminNewOrderTemplate(formattedOrder),
+      emailType: "admin_new_order",
+      metadata: { orderId, orderNumber: order.orderNumber },
+    });
+  } catch (emailErr) {
+    console.error("Non-blocking email trigger exception during order creation:", emailErr);
+  }
+
   return insertedOrder;
 }
 
@@ -352,12 +433,71 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId)
-    .select()
+    .select(`
+      *,
+      order_items (*)
+    `)
     .single();
 
   if (error) {
     console.error("Error updating order status in Supabase:", error);
     throw error;
+  }
+
+  // Asynchronously trigger Order Status Update email
+  try {
+    const { sendEmail } = await import("@/lib/email/sender");
+    const { orderStatusUpdateTemplate } = await import("@/lib/email/templates");
+
+    const formattedOrder: Order = {
+      id: data.id,
+      orderNumber: data.order_number,
+      date: data.date || data.created_at?.split("T")[0],
+      status: data.order_status || data.status,
+      items: (data.order_items || []).map((i: any) => ({
+        id: i.id,
+        productId: i.product_id,
+        productName: i.product_name,
+        productImage: i.product_image || "/images/product-dress-front.jpg",
+        color: i.color || "Standard",
+        size: i.size || "M",
+        unitPrice: Number(i.price || i.unit_price || 0),
+        quantity: Number(i.quantity || 1),
+      })),
+      subtotal: Number(data.subtotal || 0),
+      discount: Number(data.discount || 0),
+      shipping: Number(data.shipping || 0),
+      tax: Number(data.tax || 0),
+      total: Number(data.total || 0),
+      shippingAddress: {
+        id: "addr-" + data.id,
+        label: "Shipping Address",
+        fullName: data.shipping_name || "Client",
+        email: data.shipping_email || "",
+        phone: data.shipping_phone || "",
+        addressLine1: data.shipping_address_line1 || "",
+        addressLine2: data.shipping_address_line2 || "",
+        city: data.shipping_city || "",
+        state: data.shipping_state || "",
+        postalCode: data.shipping_postal_code || "",
+        country: data.shipping_country || "",
+        isDefault: true,
+      },
+      paymentMethod: data.payment_method || "Online",
+      trackingNumber: data.tracking_number,
+    };
+
+    const recipientEmail = data.shipping_email || "client@labelnuvi.com";
+
+    sendEmail({
+      to: recipientEmail,
+      subject: `Order Update: ${data.order_number} is ${status} | LABEL NUVI`,
+      html: orderStatusUpdateTemplate(formattedOrder, status),
+      emailType: `order_${status.toLowerCase()}`,
+      metadata: { orderId, orderNumber: data.order_number, status },
+    });
+  } catch (emailErr) {
+    console.error("Non-blocking status update email trigger error:", emailErr);
   }
 
   return data;
@@ -373,12 +513,70 @@ export async function cancelOrderDb(orderId: string) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId)
-    .select()
+    .select(`
+      *,
+      order_items (*)
+    `)
     .single();
 
   if (error) {
     console.error("Error cancelling order in Supabase:", error);
     throw error;
+  }
+
+  // Asynchronously trigger Order Cancelled email
+  try {
+    const { sendEmail } = await import("@/lib/email/sender");
+    const { orderStatusUpdateTemplate } = await import("@/lib/email/templates");
+
+    const formattedOrder: Order = {
+      id: data.id,
+      orderNumber: data.order_number,
+      date: data.date || data.created_at?.split("T")[0],
+      status: "Cancelled",
+      items: (data.order_items || []).map((i: any) => ({
+        id: i.id,
+        productId: i.product_id,
+        productName: i.product_name,
+        productImage: i.product_image || "/images/product-dress-front.jpg",
+        color: i.color || "Standard",
+        size: i.size || "M",
+        unitPrice: Number(i.price || i.unit_price || 0),
+        quantity: Number(i.quantity || 1),
+      })),
+      subtotal: Number(data.subtotal || 0),
+      discount: Number(data.discount || 0),
+      shipping: Number(data.shipping || 0),
+      tax: Number(data.tax || 0),
+      total: Number(data.total || 0),
+      shippingAddress: {
+        id: "addr-" + data.id,
+        label: "Shipping Address",
+        fullName: data.shipping_name || "Client",
+        email: data.shipping_email || "",
+        phone: data.shipping_phone || "",
+        addressLine1: data.shipping_address_line1 || "",
+        addressLine2: data.shipping_address_line2 || "",
+        city: data.shipping_city || "",
+        state: data.shipping_state || "",
+        postalCode: data.shipping_postal_code || "",
+        country: data.shipping_country || "",
+        isDefault: true,
+      },
+      paymentMethod: data.payment_method || "Online",
+    };
+
+    const recipientEmail = data.shipping_email || "client@labelnuvi.com";
+
+    sendEmail({
+      to: recipientEmail,
+      subject: `Order Cancelled - ${data.order_number} | LABEL NUVI`,
+      html: orderStatusUpdateTemplate(formattedOrder, "Cancelled"),
+      emailType: "order_cancelled",
+      metadata: { orderId, orderNumber: data.order_number },
+    });
+  } catch (emailErr) {
+    console.error("Non-blocking cancellation email trigger error:", emailErr);
   }
 
   return data;

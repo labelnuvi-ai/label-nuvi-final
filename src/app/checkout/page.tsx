@@ -231,10 +231,27 @@ export default function CheckoutPage() {
         };
 
         const rzp = new (window as any).Razorpay(options);
-        rzp.on("payment.failed", function (resp: any) {
+        rzp.on("payment.failed", async function (resp: any) {
           console.error("Razorpay Payment Failed:", resp.error);
-          setCheckoutError(`Payment Failed: ${resp.error.description || resp.error.reason || "Transaction declined"}`);
+          const reason = resp.error.description || resp.error.reason || "Transaction declined by gateway";
+          setCheckoutError(`Payment Failed: ${reason}`);
           setIsSubmitting(false);
+
+          // Asynchronously notify admin of failed payment
+          try {
+            const { sendEmail } = await import("@/lib/email/sender");
+            const { adminPaymentFailedTemplate } = await import("@/lib/email/templates");
+            const adminEmail = process.env.ADMIN_EMAIL || "concierge@labelnuvi.com";
+            sendEmail({
+              to: adminEmail,
+              subject: `[ADMIN ALERT] Payment Failed - Order ${orderNumber}`,
+              html: adminPaymentFailedTemplate(orderNumber, grandTotal, reason),
+              emailType: "admin_payment_failed",
+              metadata: { orderNumber, amount: grandTotal, reason },
+            });
+          } catch (emailErr) {
+            console.error("Non-blocking payment failed email trigger error:", emailErr);
+          }
         });
 
         rzp.open();

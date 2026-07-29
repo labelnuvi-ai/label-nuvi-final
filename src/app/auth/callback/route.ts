@@ -8,8 +8,23 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data?.user?.email) {
+      // Trigger welcome email asynchronously
+      try {
+        const { sendEmail } = await import("@/lib/email/sender");
+        const { welcomeTemplate } = await import("@/lib/email/templates");
+        sendEmail({
+          to: data.user.email,
+          subject: "Welcome to LABEL NUVI Atelier",
+          html: welcomeTemplate(data.user.email, data.user.user_metadata?.full_name),
+          emailType: "welcome_email",
+          metadata: { userId: data.user.id },
+        });
+      } catch (e) {
+        console.error("Welcome email exception:", e);
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
