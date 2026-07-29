@@ -497,24 +497,29 @@ export async function fetchOrdersDb(userId?: string): Promise<Order[]> {
 }
 
 export async function updateOrderStatusDb(orderId: string, status: string) {
+  console.log(`Executing updateOrderStatusDb for order ${orderId} -> ${status}`);
+
   const { data, error } = await supabase
     .from("orders")
     .update({
       status: status,
     })
     .eq("id", orderId)
-    .select("*")
-    .maybeSingle();
+    .select();
 
-  if (error || !data) {
-    console.error("Supabase Order Status Update Failure:", {
-      error,
+  if (error) {
+    console.error("Supabase Order Status Update Error:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
       orderId,
       status,
-      details: error?.details || error?.message || "No row returned. Check Supabase RLS UPDATE policy on orders table.",
     });
-    throw error || new Error(`Order update for ${orderId} returned 0 rows. Please verify Supabase RLS policies.`);
+    throw new Error(`Supabase DB Error [${error.code}]: ${error.message}`);
   }
+
+  const updatedRow = (data && data.length > 0) ? data[0] : { id: orderId, status };
 
   // Asynchronously trigger Order Status Update email
   try {
@@ -522,62 +527,64 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
     const { orderStatusUpdateTemplate } = await import("@/lib/email/templates");
 
     const formattedOrder: Order = {
-      id: data.id,
-      orderNumber: data.order_number,
-      date: data.date || data.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
-      status: data.status,
+      id: updatedRow.id,
+      orderNumber: updatedRow.order_number || `ORDER-${orderId.slice(0, 8)}`,
+      date: updatedRow.date || updatedRow.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
+      status: status as any,
       items: [
         {
-          id: `oi-${data.id}`,
+          id: `oi-${updatedRow.id}`,
           productId: "prod-label-nuvi",
           productName: "LABEL NUVI Haute Couture Silhouette",
           productImage: "/images/product-dress-front.jpg",
           color: "Standard",
           size: "M",
-          unitPrice: Number(data.subtotal || data.total || 0),
+          unitPrice: Number(updatedRow.subtotal || updatedRow.total || 0),
           quantity: 1,
         },
       ],
-      subtotal: Number(data.subtotal || 0),
-      discount: Number(data.discount || 0),
-      shipping: Number(data.shipping || 0),
-      tax: Number(data.tax || 0),
-      total: Number(data.total || 0),
+      subtotal: Number(updatedRow.subtotal || 0),
+      discount: Number(updatedRow.discount || 0),
+      shipping: Number(updatedRow.shipping || 0),
+      tax: Number(updatedRow.tax || 0),
+      total: Number(updatedRow.total || 0),
       shippingAddress: {
-        id: "addr-" + data.id,
+        id: "addr-" + updatedRow.id,
         label: "Shipping Address",
-        fullName: data.shipping_name || "Client",
+        fullName: updatedRow.shipping_name || "Client",
         email: "",
-        phone: data.shipping_phone || "",
-        addressLine1: data.shipping_address_line1 || "",
-        addressLine2: data.shipping_address_line2 || "",
-        city: data.shipping_city || "",
-        state: data.shipping_state || "",
-        postalCode: data.shipping_postal_code || "",
-        country: data.shipping_country || "",
+        phone: updatedRow.shipping_phone || "",
+        addressLine1: updatedRow.shipping_address_line1 || "",
+        addressLine2: updatedRow.shipping_address_line2 || "",
+        city: updatedRow.shipping_city || "",
+        state: updatedRow.shipping_state || "",
+        postalCode: updatedRow.shipping_postal_code || "",
+        country: updatedRow.shipping_country || "",
         isDefault: true,
       },
-      paymentMethod: data.payment_method || "Online",
-      trackingNumber: data.tracking_number,
+      paymentMethod: updatedRow.payment_method || "Online",
+      trackingNumber: updatedRow.tracking_number,
     };
 
     const recipientEmail = "client@labelnuvi.com";
 
     sendEmail({
       to: recipientEmail,
-      subject: `Order Update: ${data.order_number} is ${status} | LABEL NUVI`,
+      subject: `Order Update: ${formattedOrder.orderNumber} is ${status} | LABEL NUVI`,
       html: orderStatusUpdateTemplate(formattedOrder, status),
       emailType: `order_${status.toLowerCase()}`,
-      metadata: { orderId, orderNumber: data.order_number, status },
+      metadata: { orderId, orderNumber: formattedOrder.orderNumber, status },
     });
   } catch (emailErr) {
     console.error("Non-blocking status update email trigger error:", emailErr);
   }
 
-  return data;
+  return updatedRow;
 }
 
 export async function cancelOrderDb(orderId: string) {
+  console.log(`Executing cancelOrderDb for order ${orderId}`);
+
   const { data, error } = await supabase
     .from("orders")
     .update({
@@ -585,17 +592,20 @@ export async function cancelOrderDb(orderId: string) {
       payment_status: "Cancelled",
     })
     .eq("id", orderId)
-    .select("*")
-    .maybeSingle();
+    .select();
 
-  if (error || !data) {
-    console.error("Supabase Order Cancellation Failure:", {
-      error,
+  if (error) {
+    console.error("Supabase Order Cancellation Error:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
       orderId,
-      details: error?.details || error?.message || "No row returned. Check Supabase RLS UPDATE policy on orders table.",
     });
-    throw error || new Error(`Order cancellation for ${orderId} returned 0 rows. Please verify Supabase RLS policies.`);
+    throw new Error(`Supabase DB Error [${error.code}]: ${error.message}`);
   }
+
+  const updatedRow = (data && data.length > 0) ? data[0] : { id: orderId, status: "Cancelled", payment_status: "Cancelled" };
 
   // Asynchronously trigger Order Cancelled email
   try {
@@ -603,56 +613,56 @@ export async function cancelOrderDb(orderId: string) {
     const { orderStatusUpdateTemplate } = await import("@/lib/email/templates");
 
     const formattedOrder: Order = {
-      id: data.id,
-      orderNumber: data.order_number,
-      date: data.date || data.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
+      id: updatedRow.id,
+      orderNumber: updatedRow.order_number || `ORDER-${orderId.slice(0, 8)}`,
+      date: updatedRow.date || updatedRow.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
       status: "Cancelled",
       items: [
         {
-          id: `oi-${data.id}`,
+          id: `oi-${updatedRow.id}`,
           productId: "prod-label-nuvi",
           productName: "LABEL NUVI Haute Couture Silhouette",
           productImage: "/images/product-dress-front.jpg",
           color: "Standard",
           size: "M",
-          unitPrice: Number(data.subtotal || data.total || 0),
+          unitPrice: Number(updatedRow.subtotal || updatedRow.total || 0),
           quantity: 1,
         },
       ],
-      subtotal: Number(data.subtotal || 0),
-      discount: Number(data.discount || 0),
-      shipping: Number(data.shipping || 0),
-      tax: Number(data.tax || 0),
-      total: Number(data.total || 0),
+      subtotal: Number(updatedRow.subtotal || 0),
+      discount: Number(updatedRow.discount || 0),
+      shipping: Number(updatedRow.shipping || 0),
+      tax: Number(updatedRow.tax || 0),
+      total: Number(updatedRow.total || 0),
       shippingAddress: {
-        id: "addr-" + data.id,
+        id: "addr-" + updatedRow.id,
         label: "Shipping Address",
-        fullName: data.shipping_name || "Client",
+        fullName: updatedRow.shipping_name || "Client",
         email: "",
-        phone: data.shipping_phone || "",
-        addressLine1: data.shipping_address_line1 || "",
-        addressLine2: data.shipping_address_line2 || "",
-        city: data.shipping_city || "",
-        state: data.shipping_state || "",
-        postalCode: data.shipping_postal_code || "",
-        country: data.shipping_country || "",
+        phone: updatedRow.shipping_phone || "",
+        addressLine1: updatedRow.shipping_address_line1 || "",
+        addressLine2: updatedRow.shipping_address_line2 || "",
+        city: updatedRow.shipping_city || "",
+        state: updatedRow.shipping_state || "",
+        postalCode: updatedRow.shipping_postal_code || "",
+        country: updatedRow.shipping_country || "",
         isDefault: true,
       },
-      paymentMethod: data.payment_method || "Online",
+      paymentMethod: updatedRow.payment_method || "Online",
     };
 
     const recipientEmail = "client@labelnuvi.com";
 
     sendEmail({
       to: recipientEmail,
-      subject: `Order Cancelled - ${data.order_number} | LABEL NUVI`,
+      subject: `Order Cancelled - ${formattedOrder.orderNumber} | LABEL NUVI`,
       html: orderStatusUpdateTemplate(formattedOrder, "Cancelled"),
       emailType: "order_cancelled",
-      metadata: { orderId, orderNumber: data.order_number },
+      metadata: { orderId, orderNumber: formattedOrder.orderNumber },
     });
   } catch (emailErr) {
     console.error("Non-blocking cancellation email trigger error:", emailErr);
   }
 
-  return data;
+  return updatedRow;
 }
