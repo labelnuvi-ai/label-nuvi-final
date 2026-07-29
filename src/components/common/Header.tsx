@@ -16,9 +16,11 @@ import {
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useSearchStore } from "@/store/useSearchStore";
+import { useCMS } from "@/hooks/useCMS";
 import { springLuxury } from "@/lib/utils/motion";
 
 export function Header() {
+  const { cms } = useCMS();
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -66,6 +68,13 @@ export function Header() {
 
   return (
     <>
+      {/* Top Announcement Ticker Bar */}
+      {cms.announcementBar && (
+        <div className="bg-[#1A1A1A] text-[#FAF8F5] text-[10px] font-label font-semibold tracking-[0.22em] uppercase py-2.5 px-4 text-center border-b border-neutral-800 flex items-center justify-center space-x-2 relative z-50">
+          <span className="truncate">{cms.announcementBar}</span>
+        </div>
+      )}
+
       <header
         className={`sticky top-0 z-40 transition-all duration-700 ${
           isScrolled

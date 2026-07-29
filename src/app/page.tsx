@@ -9,12 +9,14 @@ import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { useQuickViewStore } from "@/store/useQuickViewStore";
 import { useProducts } from "@/hooks/useProducts";
+import { useCMS } from "@/hooks/useCMS";
 
 export default function HomePage() {
   const addItem = useCartStore((s) => s.addItem);
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const openQuickView = useQuickViewStore((s) => s.openQuickView);
   const { products } = useProducts();
+  const { cms } = useCMS();
 
   // Active slide state for the Joggers Campaign Carousel
   const [[joggerSlide, direction], setJoggerSlide] = useState([0, 0]);
@@ -49,7 +51,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-16 pb-20">
+    <div className="space-y-16 pb-20 font-sans">
       {/* 1. Hero Campaign Banner */}
       <section className="relative w-full h-[85vh] min-h-[500px] bg-neutral-900 overflow-hidden">
         <Image
@@ -62,18 +64,23 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-grain opacity-20 pointer-events-none" />
 
         {/* Floating Campaign Headline & CTA */}
-        <div className="absolute bottom-16 left-6 sm:left-12 text-white space-y-4">
-          <h1 className="text-3xl sm:text-5xl font-serif-luxury tracking-wider uppercase">
-            ATELIER DROP &apos;26
+        <div className="absolute bottom-16 left-6 sm:left-12 text-white space-y-4 max-w-2xl">
+          {cms.heroBadge && (
+            <span className="inline-block bg-white/10 backdrop-blur-md border border-white/20 px-3.5 py-1.5 rounded-full text-[10px] font-label font-bold tracking-[0.25em] text-[#E6D5C3] uppercase">
+              {cms.heroBadge}
+            </span>
+          )}
+          <h1 className="text-3xl sm:text-5xl font-serif-luxury tracking-wider uppercase leading-tight">
+            {cms.heroTitle}
           </h1>
           <p className="text-xs uppercase tracking-widest text-[#E6D5C3]">
-            Runway drops engineered for raw confidence.
+            {cms.heroSubtitle}
           </p>
           <Link
-            href="/shop"
+            href={cms.heroCtaLink || "/shop"}
             className="inline-block bg-white text-black text-xs font-label uppercase tracking-widest px-8 py-4 font-semibold hover:bg-[#C8A46B] hover:text-white transition-all shadow-lg rounded-full"
           >
-            DISCOVER CATALOGUE
+            {cms.heroCtaText}
           </Link>
         </div>
       </section>
