@@ -12,7 +12,7 @@ import { useProducts } from "@/hooks/useProducts";
 export default function AdminProductsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { products, categories, collections, loading: productsLoading, addProduct, updateProduct, deleteProduct, uploadProductImage } = useProducts();
+  const { products, categories, collections, loading: productsLoading, addProduct, updateProduct, deleteProduct } = useProducts();
 
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [collectionsList, setCollectionsList] = useState<Collection[]>([]);
@@ -55,22 +55,11 @@ export default function AdminProductsPage() {
   const [isNew, setIsNew] = useState(true);
   const [isBestseller, setIsBestseller] = useState(false);
   const [isSoldOut, setIsSoldOut] = useState(false);
-  
-  // Image uploading states
-  const [isUploading, setIsUploading] = useState(false);
 
   // New category form states
   const [catName, setCatName] = useState("");
   const [catDescription, setCatDescription] = useState("");
   const [catImage, setCatImage] = useState("/images/category-dresses.jpg");
-
-  const presetImages = [
-    { label: "Satin Dress (Front)", value: "/images/product-dress-front.jpg" },
-    { label: "Satin Dress (Back)", value: "/images/product-dress-back.jpg" },
-    { label: "Atelier Suit", value: "/images/product-suit-front.jpg" },
-    { label: "Outerwear Trench", value: "/images/editorial-banner.jpg" },
-    { label: "Model Portrait", value: "/images/hero-portrait.jpg" },
-  ];
 
   const presetCategoryImages = [
     { label: "Dresses (ivory)", value: "/images/category-dresses.jpg" },
@@ -130,21 +119,6 @@ export default function AdminProductsPage() {
       setSelectedSizes(selectedSizes.filter((s) => s !== size));
     } else {
       setSelectedSizes([...selectedSizes, size]);
-    }
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const publicUrl = await uploadProductImage(file);
-      setImageUrl(publicUrl);
-    } catch (err: any) {
-      alert("Storage upload failed: " + err.message);
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -483,33 +457,23 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              {/* Upload Image to Storage */}
+              {/* Main Image URL Input & Live Preview */}
               <div className="space-y-2.5">
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block">
-                  Product Image File (Supabase Storage)
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">
+                  Main Image URL
                 </label>
                 <div className="flex items-center space-x-4">
                   <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/50 shrink-0">
-                    <Image src={imageUrl} alt="Upload Preview" fill className="object-cover" />
+                    <Image src={imageUrl || "/images/product-dress-front.jpg"} alt="Image Preview" fill className="object-cover" />
                   </div>
 
-                  <label className="flex-1 flex flex-col items-center justify-center border border-dashed border-neutral-300 rounded-2xl p-4 bg-[#FAF8F5] hover:bg-neutral-50 cursor-pointer transition-colors relative">
-                    {isUploading ? (
-                      <RefreshCw className="w-5 h-5 animate-spin text-neutral-400" />
-                    ) : (
-                      <>
-                        <Upload className="w-5 h-5 text-neutral-400 mb-1" />
-                        <span className="text-[10px] text-neutral-500 font-semibold">CHOOSE FILE</span>
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      disabled={isUploading}
-                      className="hidden"
-                    />
-                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://images.unsplash.com/... or /images/..."
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="bg-[#FAF8F5] text-xs px-4 py-3.5 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
                 </div>
               </div>
 

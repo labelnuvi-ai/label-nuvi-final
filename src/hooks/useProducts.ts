@@ -334,34 +334,5 @@ export function useProducts() {
     await loadCatalog();
   };
 
-  const uploadProductImage = async (file: File): Promise<string> => {
-    const supabase = createClient();
-
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-
-    console.log("Uploading:", fileName);
-
-    const result = await supabase.storage
-      .from("products")
-      .upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    console.log("UPLOAD RESULT:", result);
-
-    if (result.error) {
-      throw result.error;
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("products").getPublicUrl(fileName);
-
-    console.log("PUBLIC URL:", publicUrl);
-
-    return publicUrl;
-  };
-
-  return { products, categories, collections, loading, addProduct, updateProduct, deleteProduct, uploadProductImage, refresh: loadCatalog };
+  return { products, categories, collections, loading, addProduct, updateProduct, deleteProduct, refresh: loadCatalog };
 }
