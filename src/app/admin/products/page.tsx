@@ -12,21 +12,22 @@ import { useProducts } from "@/hooks/useProducts";
 export default function AdminProductsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { products, categories, collections, loading: productsLoading, addProduct, updateProduct, deleteProduct } = useProducts();
+  const {
+    products,
+    categories,
+    collections,
+    loading: productsLoading,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+  } = useProducts();
 
-  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [collectionsList, setCollectionsList] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    if (categories.length > 0) {
-      setCategoriesList(categories);
-      if (!selectedCategoryId) {
-        setSelectedCategoryId(categories[0].id);
-      }
-    }
-  }, [categories]);
 
   useEffect(() => {
     if (collections.length > 0) {
@@ -41,8 +42,8 @@ export default function AdminProductsPage() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  // Form states (Add & Edit share similar keys)
   // Form states (Add & Edit share similar keys)
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -70,13 +71,16 @@ export default function AdminProductsPage() {
   const [isSoldOut, setIsSoldOut] = useState(false);
   const [isActive, setIsActive] = useState(true);
 
-  // New category form states
+  // Category form states
   const [catName, setCatName] = useState("");
+  const [catSlug, setCatSlug] = useState("");
+  const [isCatSlugUserModified, setIsCatSlugUserModified] = useState(false);
   const [catDescription, setCatDescription] = useState("");
   const [catImage, setCatImage] = useState("/images/category-dresses.jpg");
 
   const presetCategoryImages = [
     { label: "Dresses (ivory)", value: "/images/category-dresses.jpg" },
+    { label: "Co-Ord Sets", value: "/images/satin-corset-blush-pink-front.png" },
     { label: "Suiting (sand)", value: "/images/product-suit-front.jpg" },
     { label: "Outerwear (black)", value: "/images/editorial-banner.jpg" },
   ];
@@ -94,6 +98,58 @@ export default function AdminProductsPage() {
     verifyAdmin();
   }, []);
 
+  const openAddCategoryModal = () => {
+    setEditingCategory(null);
+    setCatName("");
+    setCatSlug("");
+    setIsCatSlugUserModified(false);
+    setCatDescription("");
+    setCatImage("/images/category-dresses.jpg");
+    setIsCategoryModalOpen(true);
+  };
+
+  const openEditCategoryModal = (cat: Category) => {
+    setEditingCategory(cat);
+    setCatName(cat.name);
+    setCatSlug(cat.slug || "");
+    setIsCatSlugUserModified(true);
+    setCatDescription(cat.description || "");
+    setCatImage(cat.imageUrl || "/images/category-dresses.jpg");
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!catName.trim()) return;
+
+    const payload = {
+      name: catName.trim(),
+      slug: catSlug.trim() || catName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      description: catDescription.trim(),
+      imageUrl: catImage.trim() || "/images/category-dresses.jpg",
+    };
+
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, payload);
+      } else {
+        await addCategory(payload);
+      }
+      setIsCategoryModalOpen(false);
+    } catch (err: any) {
+      alert("Failed to save category: " + err.message);
+    }
+  };
+
+  const handleDeleteCategory = async (catId: string) => {
+    if (!confirm("Are you sure you want to delete this category from Supabase?")) return;
+    try {
+      await deleteCategory(catId);
+    } catch (err: any) {
+      alert("Failed to delete category: " + err.message);
+    }
+  };
+
   const openAddModal = () => {
     setEditingProduct(null);
     setName("");
@@ -101,7 +157,7 @@ export default function AdminProductsPage() {
     setIsSlugUserModified(false);
     setPrice("");
     setSalePrice("");
-    setSelectedCategoryId(categoriesList[0]?.id || "");
+    setSelectedCategoryId(categories[0]?.id || "");
     setSelectedCollectionId(collectionsList[0]?.id || "");
     setSubtitle("");
     setDescription("");
@@ -125,7 +181,7 @@ export default function AdminProductsPage() {
     setIsSlugUserModified(true);
     setPrice(String(prod.price));
     setSalePrice(prod.salePrice ? String(prod.salePrice) : "");
-    setSelectedCategoryId(prod.categoryId || categoriesList[0]?.id || "");
+    setSelectedCategoryId(prod.categoryId || categories[0]?.id || "");
     setSelectedCollectionId(prod.collectionId || collectionsList[0]?.id || "");
     setSubtitle(prod.subtitle || "");
     setDescription(prod.description || "");
@@ -154,7 +210,7 @@ export default function AdminProductsPage() {
     e.preventDefault();
     if (!name || !price) return;
 
-    const matchedCat = categoriesList.find((c) => c.id === selectedCategoryId);
+    const matchedCat = categories.find((c) => c.id === selectedCategoryId);
     const matchedCol = collectionsList.find((c) => c.id === selectedCollectionId);
 
     const imagesList = [imageUrl, galleryUrl1, galleryUrl2, galleryUrl3].filter((u) => Boolean(u && u.trim()));
@@ -194,26 +250,7 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleAddCategorySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!catName) return;
 
-    const newCat: Category = {
-      id: "cat-" + (categoriesList.length + 1),
-      name: catName,
-      slug: catName.toLowerCase().replace(/ /g, "-"),
-      description: catDescription || "Luxury atelier curated drops.",
-      imageUrl: catImage,
-      itemCount: 0,
-    };
-
-    setCategoriesList([...categoriesList, newCat]);
-    setIsCategoryModalOpen(false);
-
-    // Reset Form
-    setCatName("");
-    setCatDescription("");
-  };
 
   const handleDeleteProduct = async (id: string) => {
     if (!confirm("Are you sure you want to delete this piece?")) return;
@@ -255,7 +292,7 @@ export default function AdminProductsPage() {
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={() => setIsCategoryModalOpen(true)}
+            onClick={openAddCategoryModal}
             className="bg-white text-black border border-neutral-200 text-xs font-label uppercase tracking-widest px-6 py-3.5 rounded-full flex items-center space-x-1.5 shadow-sm hover:border-black transition-colors"
           >
             <Tag className="w-4 h-4" />
@@ -462,7 +499,7 @@ export default function AdminProductsPage() {
                     onChange={(e) => setSelectedCategoryId(e.target.value)}
                     className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                   >
-                    {categoriesList.map((c) => (
+                    {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
@@ -708,7 +745,78 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Add Category Modal */}
+      {/* Categories Management Table */}
+      <div className="space-y-4 pt-6 border-t border-neutral-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-label uppercase tracking-widest text-[#C8A46B] font-semibold">
+              SUPABASE DATABASE INDEX
+            </span>
+            <h2 className="text-xl font-serif font-bold uppercase tracking-wider text-neutral-900">
+              CATEGORIES INDEX ({categories.length})
+            </h2>
+          </div>
+          <button
+            onClick={openAddCategoryModal}
+            className="bg-black text-white text-xs font-label uppercase tracking-widest px-5 py-2.5 rounded-full flex items-center space-x-1.5 shadow-sm hover:bg-neutral-800 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>ADD CATEGORY</span>
+          </button>
+        </div>
+
+        <div className="bg-white rounded-[24px] border border-neutral-200/80 shadow-luxury-xs overflow-hidden">
+          <table className="min-w-full divide-y divide-neutral-200 text-left text-xs font-label tracking-wider">
+            <thead className="bg-[#FAF8F5] uppercase text-[#706C66]">
+              <tr>
+                <th className="px-6 py-4">Image</th>
+                <th className="px-6 py-4">Name</th>
+                <th className="px-6 py-4">Slug</th>
+                <th className="px-6 py-4">Description</th>
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200/60 font-sans text-neutral-800">
+              {categories.map((cat) => (
+                <tr key={cat.id} className="hover:bg-neutral-50/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/50">
+                      <Image src={cat.imageUrl || "/images/category-dresses.jpg"} alt={cat.name} fill className="object-cover" />
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="font-semibold text-black uppercase block">{cat.name}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-neutral-500 font-mono text-[11px] bg-neutral-100 px-2.5 py-1 rounded-md">{cat.slug}</span>
+                  </td>
+                  <td className="px-6 py-4 max-w-xs truncate text-neutral-500 text-xs">
+                    {cat.description || "—"}
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button
+                      onClick={() => openEditCategoryModal(cat)}
+                      className="p-2 text-neutral-400 hover:text-black transition-colors"
+                      title="Edit Category"
+                    >
+                      <Edit3 className="w-4 h-4 stroke-[1.5]" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(cat.id)}
+                      className="p-2 text-neutral-400 hover:text-red-600 transition-colors"
+                      title="Delete Category"
+                    >
+                      <Trash2 className="w-4 h-4 stroke-[1.5]" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add / Edit Category Modal */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/40 backdrop-blur-xs">
           <div className="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative">
@@ -721,16 +829,16 @@ export default function AdminProductsPage() {
 
             <div>
               <span className="text-[9px] font-label uppercase tracking-widest text-[#706C66] font-semibold">
-                CREATE INDEX
+                {editingCategory ? "MODIFY INDEX" : "CREATE INDEX"}
               </span>
               <h3 className="text-xl font-serif font-bold uppercase tracking-wider text-[#1a1a1a]">
-                ADD NEW CATEGORY
+                {editingCategory ? "EDIT CATEGORY INDEX" : "ADD NEW CATEGORY"}
               </h3>
             </div>
 
-            <form onSubmit={handleAddCategorySubmit} className="space-y-4 text-xs font-label">
+            <form onSubmit={handleCategorySubmit} className="space-y-4 text-xs font-label">
               <div>
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
                   Category Name
                 </label>
                 <input
@@ -738,13 +846,36 @@ export default function AdminProductsPage() {
                   required
                   placeholder="e.g. Sculpt & Contour"
                   value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCatName(val);
+                    if (!isCatSlugUserModified) {
+                      setCatSlug(val.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""));
+                    }
+                  }}
                   className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                  Category Slug (Auto-Generated / Editable)
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. sculpt-and-contour"
+                  value={catSlug}
+                  onChange={(e) => {
+                    setCatSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                    setIsCatSlugUserModified(true);
+                  }}
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
                   Description
                 </label>
                 <textarea
@@ -756,10 +887,24 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              <div>
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
-                  Category Image Banner
+              <div className="space-y-2">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">
+                  Category Image Banner URL
                 </label>
+
+                <div className="flex items-center space-x-3">
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
+                    <Image src={catImage || "/images/category-dresses.jpg"} alt="Category Preview" fill className="object-cover" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="https://images.unsplash.com/... or /images/..."
+                    value={catImage}
+                    onChange={(e) => setCatImage(e.target.value)}
+                    className="bg-[#FAF8F5] text-xs px-3.5 py-3 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-2 mt-1.5 bg-[#FAF8F5] p-2 rounded-2xl border border-neutral-200/80">
                   {presetCategoryImages.map((img) => (
                     <button
@@ -780,7 +925,7 @@ export default function AdminProductsPage() {
                 type="submit"
                 className="w-full bg-[#1A1A1A] text-[#FAF8F5] text-xs uppercase tracking-[0.2em] py-4 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors"
               >
-                CREATE CATEGORY INDEX
+                {editingCategory ? "SAVE CATEGORY CHANGES" : "CREATE CATEGORY INDEX"}
               </button>
             </form>
           </div>

@@ -335,5 +335,91 @@ export function useProducts() {
     await loadCatalog();
   };
 
-  return { products, categories, collections, loading, addProduct, updateProduct, deleteProduct, refresh: loadCatalog };
+  const addCategory = async (catData: Partial<Category>) => {
+    const supabase = createClient();
+    const id = catData.id || "cat-" + Date.now();
+    const now = new Date().toISOString();
+
+    const dbRow = {
+      id,
+      name: catData.name,
+      slug: catData.slug || catData.name?.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "cat-" + Date.now(),
+      description: catData.description || "",
+      image_url: catData.imageUrl || "/images/category-dresses.jpg",
+      created_at: now,
+      updated_at: now,
+    };
+
+    const { data, error } = await supabase
+      .from("categories")
+      .insert(dbRow)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating category:", error);
+      throw error;
+    }
+
+    await loadCatalog();
+    return data;
+  };
+
+  const updateCategory = async (categoryId: string, catData: Partial<Category>) => {
+    const supabase = createClient();
+    const now = new Date().toISOString();
+
+    const dbRow: any = {
+      updated_at: now,
+    };
+    if (catData.name !== undefined) dbRow.name = catData.name;
+    if (catData.slug !== undefined) dbRow.slug = catData.slug;
+    if (catData.description !== undefined) dbRow.description = catData.description;
+    if (catData.imageUrl !== undefined) dbRow.image_url = catData.imageUrl;
+
+    const { data, error } = await supabase
+      .from("categories")
+      .update(dbRow)
+      .eq("id", categoryId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating category:", error);
+      throw error;
+    }
+
+    await loadCatalog();
+    return data;
+  };
+
+  const deleteCategory = async (categoryId: string) => {
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from("categories")
+      .delete()
+      .eq("id", categoryId);
+
+    if (error) {
+      console.error("Error deleting category:", error);
+      throw error;
+    }
+
+    await loadCatalog();
+  };
+
+  return {
+    products,
+    categories,
+    collections,
+    loading,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    refresh: loadCatalog,
+  };
 }
