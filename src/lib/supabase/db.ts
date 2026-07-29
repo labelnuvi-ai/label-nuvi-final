@@ -201,61 +201,75 @@ export async function syncCartDb(userId: string, items: CartItem[]) {
 }
 
 // 4. Order Operations
-export async function createOrderDb(userId: string | null, order: Order) {
-  // First insert order details
+export async function createOrderDb(userId: string | null, order: any) {
+  const now = new Date().toISOString();
+
   const orderRow = {
     user_id: userId,
     order_number: order.orderNumber,
-    date: order.date,
-    status: order.status,
-    subtotal: order.subtotal,
-    discount: order.discount,
-    shipping: order.shipping,
-    total: order.total,
-    tracking_number: order.trackingNumber,
-    payment_method: order.paymentMethod,
-    payment_status: (order as any).paymentStatus || "Pending",
-    payment_id: (order as any).paymentId || null,
-    shipping_name: order.shippingAddress.fullName,
-    shipping_address_line1: order.shippingAddress.addressLine1,
-    shipping_address_line2: order.shippingAddress.addressLine2 || "",
-    shipping_city: order.shippingAddress.city,
-    shipping_state: order.shippingAddress.state,
-    shipping_postal_code: order.shippingAddress.postalCode,
-    shipping_country: order.shippingAddress.country,
-    shipping_phone: order.shippingAddress.phone || "",
+    date: order.date || now.split("T")[0],
+    subtotal: Number(order.subtotal || 0),
+    discount: Number(order.discount || 0),
+    shipping: Number(order.shipping || 0),
+    tax: Number(order.tax || 0),
+    total: Number(order.total || 0),
+    status: order.orderStatus || order.status || "Processing",
+    order_status: order.orderStatus || order.status || "Processing",
+    payment_status: order.paymentStatus || "Pending",
+    payment_method: order.paymentMethod || "Razorpay / Online",
+    payment_id: order.razorpayPaymentId || order.paymentId || null,
+    razorpay_order_id: order.razorpayOrderId || null,
+    razorpay_payment_id: order.razorpayPaymentId || order.paymentId || null,
+    address_id: order.addressId || null,
+
+    // Detailed address columns
+    shipping_name: order.shippingAddress?.fullName || "",
+    shipping_email: order.shippingAddress?.email || "",
+    shipping_phone: order.shippingAddress?.phone || "",
+    shipping_address_line1: order.shippingAddress?.addressLine1 || "",
+    shipping_address_line2: order.shippingAddress?.addressLine2 || "",
+    shipping_city: order.shippingAddress?.city || "",
+    shipping_state: order.shippingAddress?.state || "",
+    shipping_postal_code: order.shippingAddress?.postalCode || "",
+    shipping_country: order.shippingAddress?.country || "",
+    created_at: now,
   };
 
   const { data: insertedOrder, error: orderError } = await supabase
     .from("orders")
     .insert(orderRow)
-    .select("id")
+    .select("*")
     .single();
 
   if (orderError) {
-    console.error("Error creating order:", orderError);
+    console.error("Error creating order in Supabase:", orderError);
     throw orderError;
   }
 
-  // Insert items matching this order id
-  const itemRows = order.items.map((item) => ({
-    order_id: insertedOrder.id,
-    product_id: item.productId,
-    product_name: item.productName,
-    product_image: item.productImage,
-    color: item.color,
-    size: item.size,
-    unit_price: item.unitPrice,
-    quantity: item.quantity,
-  }));
+  const orderId = insertedOrder.id;
 
-  const { error: itemsError } = await supabase.from("order_items").insert(itemRows);
-  if (itemsError) {
-    console.error("Error inserting order items:", itemsError);
-    throw itemsError;
+  // Insert order_items
+  if (order.items && order.items.length > 0) {
+    const itemRows = order.items.map((item: any) => ({
+      order_id: orderId,
+      product_id: item.productId,
+      product_name: item.productName,
+      product_image: item.productImage,
+      color: item.color || "Standard",
+      size: item.size,
+      price: Number(item.unitPrice || item.price || 0),
+      unit_price: Number(item.unitPrice || item.price || 0),
+      quantity: Number(item.quantity || 1),
+      created_at: now,
+    }));
+
+    const { error: itemsError } = await supabase.from("order_items").insert(itemRows);
+    if (itemsError) {
+      console.error("Error inserting order_items in Supabase:", itemsError);
+    }
   }
 
-  return insertedOrder.id;
+  return insertedOrder;
 }
 
 export async function fetchOrdersDb(userId: string): Promise<Order[]> {
