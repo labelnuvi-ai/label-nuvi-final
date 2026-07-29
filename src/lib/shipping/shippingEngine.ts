@@ -178,7 +178,7 @@ export async function trackOrderLive(orderRef: string) {
     return null;
   }
 
-  const orderStatus = orderRow.order_status || orderRow.status || "Pending";
+  const orderStatus = orderRow.status || "Pending";
   const trackingNo = orderRow.tracking_number || generateTrackingNumber("Shiprocket");
   const carrier = orderRow.carrier_name || "Shiprocket Air Cargo";
   const estDelivery = calculateDeliveryEstimate("express", new Date(orderRow.created_at || Date.now())).formattedRange;

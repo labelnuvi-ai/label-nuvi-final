@@ -1,7 +1,5 @@
--- Live Production Schema for LABEL NUVI (Supabase Postgres)
--- Regenerated based on live production database specifications:
--- - products.id, categories.id, collections.id, orders.id, order_items.id are UUIDs
--- - Obsolete columns (date, status, payment_method, payment_id, unit_price) removed from orders and order_items
+-- Live Production Supabase Database Schema for LABEL NUVI
+-- Matches the actual live production database tables 100%
 
 -- 1. profiles Table
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -13,12 +11,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Profiles read access" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Trigger for profile creation on new signup
+-- Trigger for automatic profile row creation on user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
@@ -126,35 +123,30 @@ CREATE TABLE IF NOT EXISTS public.wishlist_items (
 ALTER TABLE public.wishlist_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users wishlist access" ON public.wishlist_items FOR ALL USING (auth.uid() = user_id);
 
--- 7. orders Table (Cleaned Production Schema)
+-- 7. orders Table (EXACT LIVE PRODUCTION SCHEMA)
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   order_number TEXT UNIQUE NOT NULL,
-  subtotal DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  discount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  shipping DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  tax DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  total DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  order_status TEXT NOT NULL DEFAULT 'Pending',
-  payment_status TEXT NOT NULL DEFAULT 'Pending',
-  razorpay_order_id TEXT,
-  razorpay_payment_id TEXT,
-  address_id UUID,
+  date TEXT NOT NULL,
+  status TEXT DEFAULT 'Processing' NOT NULL,
+  subtotal DECIMAL(10, 2) NOT NULL,
+  discount DECIMAL(10, 2) DEFAULT 0.00 NOT NULL,
+  shipping DECIMAL(10, 2) DEFAULT 0.00 NOT NULL,
+  total DECIMAL(10, 2) NOT NULL,
+  tracking_number TEXT,
+  payment_method TEXT NOT NULL,
+  payment_status TEXT DEFAULT 'Pending' NOT NULL,
+  payment_id TEXT,
   shipping_name TEXT NOT NULL,
-  shipping_email TEXT,
-  shipping_phone TEXT,
   shipping_address_line1 TEXT NOT NULL,
   shipping_address_line2 TEXT,
   shipping_city TEXT NOT NULL,
   shipping_state TEXT NOT NULL,
   shipping_postal_code TEXT NOT NULL,
   shipping_country TEXT NOT NULL,
-  coupon_code TEXT,
-  tracking_number TEXT,
-  carrier_name TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  shipping_phone TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
@@ -162,17 +154,17 @@ CREATE POLICY "Public & auth orders select" ON public.orders FOR SELECT USING (t
 CREATE POLICY "Public & auth orders insert" ON public.orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public & auth orders update" ON public.orders FOR UPDATE USING (true);
 
--- 8. order_items Table (Cleaned Production Schema)
+-- 8. order_items Table (EXACT LIVE PRODUCTION SCHEMA)
 CREATE TABLE IF NOT EXISTS public.order_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE NOT NULL,
   product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
   product_name TEXT NOT NULL,
-  product_image TEXT,
+  product_image TEXT NOT NULL,
   color TEXT NOT NULL,
   size TEXT NOT NULL,
-  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  quantity INTEGER NOT NULL DEFAULT 1,
+  unit_price DECIMAL(10, 2) NOT NULL,
+  quantity INTEGER NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -180,7 +172,7 @@ ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public & auth order items select" ON public.order_items FOR SELECT USING (true);
 CREATE POLICY "Public & auth order items insert" ON public.order_items FOR INSERT WITH CHECK (true);
 
--- 9. email_logs Table (Audit Trail)
+-- 9. email_logs Table
 CREATE TABLE IF NOT EXISTS public.email_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   to_email TEXT NOT NULL,
@@ -193,5 +185,5 @@ CREATE TABLE IF NOT EXISTS public.email_logs (
 );
 
 ALTER TABLE public.email_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admin read email logs" ON public.email_logs FOR SELECT USING (true);
-CREATE POLICY "System insert email logs" ON public.email_logs FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public email logs select" ON public.email_logs FOR SELECT USING (true);
+CREATE POLICY "Public email logs insert" ON public.email_logs FOR INSERT WITH CHECK (true);

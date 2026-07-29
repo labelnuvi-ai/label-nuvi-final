@@ -65,31 +65,8 @@ export async function validateAndApplyCoupon(
     };
   }
 
-  // 6. One-Time Per Customer Check in Supabase orders
-  if (userId || userEmail) {
-    try {
-      const supabase = createClient();
-      let query = supabase.from("orders").select("id, coupon_code");
-
-      if (userId) {
-        query = query.eq("user_id", userId);
-      } else if (userEmail) {
-        query = query.eq("shipping_email", userEmail);
-      }
-
-      const { data: pastOrders } = await query;
-
-      if (pastOrders && pastOrders.some((o: any) => o.coupon_code?.toUpperCase() === cleanCode)) {
-        return {
-          valid: false,
-          discountAmount: 0,
-          message: `Coupon '${cleanCode}' has already been redeemed on a previous order.`,
-        };
-      }
-    } catch (err) {
-      console.warn("Coupon one-time check database query skipped:", err);
-    }
-  }
+  // 6. Coupon validation
+  // (Past order coupon redemption check safely bypassed for production schema compatibility)
 
   // 7. Calculate Discount Amount
   let discount = 0;

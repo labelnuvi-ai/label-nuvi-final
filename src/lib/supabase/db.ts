@@ -207,30 +207,27 @@ export async function createOrderDb(userId: string | null, order: any) {
   const orderRow = {
     user_id: userId,
     order_number: order.orderNumber,
+    date: order.date || now.split("T")[0],
+    status: order.orderStatus || order.status || "Processing",
     subtotal: Number(order.subtotal || 0),
     discount: Number(order.discount || 0),
     shipping: Number(order.shipping || 0),
-    tax: Number(order.tax || 0),
     total: Number(order.total || 0),
-    coupon_code: order.couponCode || order.appliedCoupon?.code || null,
-    order_status: order.orderStatus || order.status || "Processing",
+    tracking_number: order.trackingNumber || null,
+    payment_method: order.paymentMethod || "Razorpay / Online",
     payment_status: order.paymentStatus || "Pending",
-    razorpay_order_id: order.razorpayOrderId || null,
-    razorpay_payment_id: order.razorpayPaymentId || order.paymentId || null,
-    address_id: order.addressId || null,
+    payment_id: order.razorpayPaymentId || order.paymentId || null,
 
     // Detailed address columns
     shipping_name: order.shippingAddress?.fullName || "",
-    shipping_email: order.shippingAddress?.email || "",
-    shipping_phone: order.shippingAddress?.phone || "",
     shipping_address_line1: order.shippingAddress?.addressLine1 || "",
     shipping_address_line2: order.shippingAddress?.addressLine2 || "",
     shipping_city: order.shippingAddress?.city || "",
     shipping_state: order.shippingAddress?.state || "",
     shipping_postal_code: order.shippingAddress?.postalCode || "",
     shipping_country: order.shippingAddress?.country || "",
+    shipping_phone: order.shippingAddress?.phone || "",
     created_at: now,
-    updated_at: now,
   };
 
   const { data: insertedOrder, error: orderError } = await supabase
@@ -252,10 +249,10 @@ export async function createOrderDb(userId: string | null, order: any) {
       order_id: orderId,
       product_id: item.productId,
       product_name: item.productName,
-      product_image: item.productImage,
+      product_image: item.productImage || "/images/product-dress-front.jpg",
       color: item.color || "Standard",
-      size: item.size,
-      price: Number(item.price || item.unitPrice || 0),
+      size: item.size || "M",
+      unit_price: Number(item.unitPrice || item.price || 0),
       quantity: Number(item.quantity || 1),
       created_at: now,
     }));
@@ -274,8 +271,8 @@ export async function createOrderDb(userId: string | null, order: any) {
     const formattedOrder: Order = {
       id: orderId,
       orderNumber: order.orderNumber,
-      date: now.split("T")[0],
-      status: orderRow.order_status as any,
+      date: orderRow.date,
+      status: orderRow.status as any,
       items: (order.items || []).map((i: any, idx: number) => ({
         id: `oi-${idx}`,
         productId: i.productId,
@@ -283,19 +280,19 @@ export async function createOrderDb(userId: string | null, order: any) {
         productImage: i.productImage || "/images/product-dress-front.jpg",
         color: i.color || "Standard",
         size: i.size,
-        unitPrice: Number(i.price || i.unitPrice || 0),
+        unitPrice: Number(i.unitPrice || i.price || 0),
         quantity: Number(i.quantity || 1),
       })),
       subtotal: orderRow.subtotal,
       discount: orderRow.discount,
       shipping: orderRow.shipping,
-      tax: orderRow.tax,
+      tax: Number(order.tax || 0),
       total: orderRow.total,
       shippingAddress: {
         id: "addr-" + orderId,
         label: "Shipping Address",
         fullName: orderRow.shipping_name,
-        email: orderRow.shipping_email,
+        email: order.shippingAddress?.email || "",
         phone: orderRow.shipping_phone,
         addressLine1: orderRow.shipping_address_line1,
         addressLine2: orderRow.shipping_address_line2,
@@ -305,14 +302,14 @@ export async function createOrderDb(userId: string | null, order: any) {
         country: orderRow.shipping_country,
         isDefault: true,
       },
-      paymentMethod: order.paymentMethod || "Razorpay",
+      paymentMethod: orderRow.payment_method,
       paymentStatus: orderRow.payment_status as any,
-      paymentId: orderRow.razorpay_payment_id,
-      razorpayOrderId: orderRow.razorpay_order_id,
-      razorpayPaymentId: orderRow.razorpay_payment_id,
+      paymentId: orderRow.payment_id,
+      razorpayOrderId: orderRow.payment_id,
+      razorpayPaymentId: orderRow.payment_id,
     };
 
-    const recipientEmail = orderRow.shipping_email || "client@labelnuvi.com";
+    const recipientEmail = order.shippingAddress?.email || "client@labelnuvi.com";
 
     // 1. Send Order Confirmation Email to Customer
     sendEmail({
@@ -377,24 +374,24 @@ export async function fetchOrdersDb(userId?: string): Promise<Order[]> {
     return (ordersData || []).map((row: any) => ({
       id: row.id,
       orderNumber: row.order_number,
-      date: row.created_at ? row.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
-      status: row.order_status || "Pending",
+      date: row.date || (row.created_at ? row.created_at.split("T")[0] : new Date().toISOString().split("T")[0]),
+      status: row.status || "Pending",
       subtotal: Number(row.subtotal || 0),
       discount: Number(row.discount || 0),
       shipping: Number(row.shipping || 0),
       tax: Number(row.tax || 0),
       total: Number(row.total || 0),
       trackingNumber: row.tracking_number || null,
-      paymentMethod: row.razorpay_payment_id ? "Razorpay" : "Online Payment",
+      paymentMethod: row.payment_method || "Razorpay / Online",
       paymentStatus: row.payment_status || "Pending",
-      paymentId: row.razorpay_payment_id || null,
-      razorpayOrderId: row.razorpay_order_id || null,
-      razorpayPaymentId: row.razorpay_payment_id || null,
+      paymentId: row.payment_id || null,
+      razorpayOrderId: row.payment_id || null,
+      razorpayPaymentId: row.payment_id || null,
       shippingAddress: {
         id: "addr-" + row.id,
         label: "Delivery Address",
         fullName: row.shipping_name || "Client",
-        email: row.shipping_email || "",
+        email: "",
         phone: row.shipping_phone || "",
         addressLine1: row.shipping_address_line1 || "",
         addressLine2: row.shipping_address_line2 || "",
@@ -411,7 +408,7 @@ export async function fetchOrdersDb(userId?: string): Promise<Order[]> {
         productImage: item.product_image || "/images/product-dress-front.jpg",
         color: item.color || "Standard",
         size: item.size || "M",
-        unitPrice: Number(item.price || 0),
+        unitPrice: Number(item.unit_price || item.price || 0),
         quantity: Number(item.quantity || 1),
       })),
     }));
@@ -425,8 +422,7 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
   const { data, error } = await supabase
     .from("orders")
     .update({
-      order_status: status,
-      updated_at: new Date().toISOString(),
+      status: status,
     })
     .eq("id", orderId)
     .select(`
@@ -448,8 +444,8 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
     const formattedOrder: Order = {
       id: data.id,
       orderNumber: data.order_number,
-      date: data.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
-      status: data.order_status,
+      date: data.date || data.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
+      status: data.status,
       items: (data.order_items || []).map((i: any) => ({
         id: i.id,
         productId: i.product_id,
@@ -457,7 +453,7 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
         productImage: i.product_image || "/images/product-dress-front.jpg",
         color: i.color || "Standard",
         size: i.size || "M",
-        unitPrice: Number(i.price || 0),
+        unitPrice: Number(i.unit_price || i.price || 0),
         quantity: Number(i.quantity || 1),
       })),
       subtotal: Number(data.subtotal || 0),
@@ -469,7 +465,7 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
         id: "addr-" + data.id,
         label: "Shipping Address",
         fullName: data.shipping_name || "Client",
-        email: data.shipping_email || "",
+        email: "",
         phone: data.shipping_phone || "",
         addressLine1: data.shipping_address_line1 || "",
         addressLine2: data.shipping_address_line2 || "",
@@ -479,11 +475,11 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
         country: data.shipping_country || "",
         isDefault: true,
       },
-      paymentMethod: data.razorpay_payment_id ? "Razorpay" : "Online Payment",
+      paymentMethod: data.payment_method || "Online",
       trackingNumber: data.tracking_number,
     };
 
-    const recipientEmail = data.shipping_email || "client@labelnuvi.com";
+    const recipientEmail = "client@labelnuvi.com";
 
     sendEmail({
       to: recipientEmail,
@@ -503,9 +499,8 @@ export async function cancelOrderDb(orderId: string) {
   const { data, error } = await supabase
     .from("orders")
     .update({
-      order_status: "Cancelled",
+      status: "Cancelled",
       payment_status: "Cancelled",
-      updated_at: new Date().toISOString(),
     })
     .eq("id", orderId)
     .select(`
@@ -527,7 +522,7 @@ export async function cancelOrderDb(orderId: string) {
     const formattedOrder: Order = {
       id: data.id,
       orderNumber: data.order_number,
-      date: data.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
+      date: data.date || data.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
       status: "Cancelled",
       items: (data.order_items || []).map((i: any) => ({
         id: i.id,
@@ -536,7 +531,7 @@ export async function cancelOrderDb(orderId: string) {
         productImage: i.product_image || "/images/product-dress-front.jpg",
         color: i.color || "Standard",
         size: i.size || "M",
-        unitPrice: Number(i.price || 0),
+        unitPrice: Number(i.unit_price || i.price || 0),
         quantity: Number(i.quantity || 1),
       })),
       subtotal: Number(data.subtotal || 0),
@@ -548,7 +543,7 @@ export async function cancelOrderDb(orderId: string) {
         id: "addr-" + data.id,
         label: "Shipping Address",
         fullName: data.shipping_name || "Client",
-        email: data.shipping_email || "",
+        email: "",
         phone: data.shipping_phone || "",
         addressLine1: data.shipping_address_line1 || "",
         addressLine2: data.shipping_address_line2 || "",
@@ -558,10 +553,10 @@ export async function cancelOrderDb(orderId: string) {
         country: data.shipping_country || "",
         isDefault: true,
       },
-      paymentMethod: data.razorpay_payment_id ? "Razorpay" : "Online Payment",
+      paymentMethod: data.payment_method || "Online",
     };
 
-    const recipientEmail = data.shipping_email || "client@labelnuvi.com";
+    const recipientEmail = "client@labelnuvi.com";
 
     sendEmail({
       to: recipientEmail,
