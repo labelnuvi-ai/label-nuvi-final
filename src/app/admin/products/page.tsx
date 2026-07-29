@@ -82,6 +82,35 @@ export default function AdminProductsPage() {
   const [colBannerImage, setColBannerImage] = useState("/images/editorial-banner.jpg");
   const [colIsFeatured, setColIsFeatured] = useState(true);
 
+  // Cloudinary Upload States
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleMainImageCloudinaryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadError(null);
+
+    try {
+      const { uploadToCloudinary } = await import("@/lib/cloudinary/upload");
+      const secureUrl = await uploadToCloudinary(file, {
+        onProgress: (pct) => setUploadProgress(pct),
+      });
+
+      setImageUrl(secureUrl);
+      setUploadError(null);
+    } catch (err: any) {
+      console.error("Cloudinary upload failed:", err);
+      setUploadError(err.message || "Failed to upload image to Cloudinary.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const presetCategoryImages = [
     { label: "Dresses (ivory)", value: "/images/category-dresses.jpg" },
     { label: "Co-Ord Sets", value: "/images/satin-corset-blush-pink-front.png" },
@@ -629,24 +658,105 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              {/* Main & Gallery Image URLs */}
-              <div className="space-y-3 pt-2 border-t border-neutral-100">
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">
-                  Main Cover & Gallery Image URLs
-                </label>
-
-                {/* Main Image URL */}
-                <div className="flex items-center space-x-3">
-                  <div className="relative w-12 h-14 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
-                    <Image src={imageUrl || "/images/product-dress-front.jpg"} alt="Main Preview" fill className="object-cover" />
+              {/* Main Cover Cloudinary Uploader & Gallery Images */}
+              <div className="space-y-4 pt-2 border-t border-neutral-100 font-label">
+                {/* Main Cover Image Uploader */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">
+                      Main Cover Image (Cloudinary Direct Uploader)
+                    </label>
+                    {imageUrl && (
+                      <span className="text-[9px] uppercase font-mono tracking-widest text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        {imageUrl.includes("cloudinary.com") ? "Cloudinary Secure CDN" : "Media Selected"}
+                      </span>
+                    )}
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Main Cover Image URL (e.g. /images/satin-corset-blush-pink-front.png)"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    className="bg-[#FAF8F5] text-xs px-3.5 py-3 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                  />
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200/80">
+                    {/* Instant Image Preview */}
+                    <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0 shadow-xs self-center sm:self-auto">
+                      <Image
+                        src={imageUrl || "/images/product-dress-front.jpg"}
+                        alt="Main Cover Preview"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+
+                    {/* Upload Controls */}
+                    <div className="flex-1 space-y-2 flex flex-col justify-center min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <label
+                          className={`relative cursor-pointer bg-black text-white text-xs font-label uppercase tracking-widest px-5 py-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-sm ${
+                            isUploading ? "opacity-60 pointer-events-none cursor-not-allowed" : "hover:bg-neutral-800"
+                          }`}
+                        >
+                          {isUploading ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+                              <span>UPLOADING ({uploadProgress}%)</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 stroke-[1.5]" />
+                              <span>{imageUrl ? "CHANGE IMAGE" : "UPLOAD IMAGE"}</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploading}
+                            onChange={handleMainImageCloudinaryUpload}
+                            className="sr-only"
+                          />
+                        </label>
+
+                        {imageUrl && !isUploading && (
+                          <button
+                            type="button"
+                            onClick={() => setImageUrl("")}
+                            className="text-[10px] uppercase font-semibold text-neutral-400 hover:text-red-600 px-2 py-1 transition-colors"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Real-time Progress Bar */}
+                      {isUploading && (
+                        <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="bg-black h-full transition-all duration-200"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Error Message & Retry */}
+                      {uploadError && (
+                        <div className="text-[10px] text-red-600 font-sans font-medium flex items-center justify-between bg-red-50 p-2 rounded-xl border border-red-200">
+                          <span>{uploadError}</span>
+                          <label className="underline font-bold cursor-pointer hover:text-red-800 uppercase ml-2 shrink-0">
+                            Retry
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={isUploading}
+                              onChange={handleMainImageCloudinaryUpload}
+                              className="sr-only"
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {!isUploading && !uploadError && imageUrl && (
+                        <p className="text-[10px] font-mono text-neutral-400 truncate max-w-xs">
+                          {imageUrl}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Gallery Image 1 */}
