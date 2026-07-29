@@ -470,11 +470,16 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
     })
     .eq("id", orderId)
     .select("*")
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    console.error("Error updating order status in Supabase:", error);
-    throw error;
+  if (error || !data) {
+    console.error("Supabase Order Status Update Failure:", {
+      error,
+      orderId,
+      status,
+      details: error?.details || error?.message || "No row returned. Check Supabase RLS UPDATE policy on orders table.",
+    });
+    throw error || new Error(`Order update for ${orderId} returned 0 rows. Please verify Supabase RLS policies.`);
   }
 
   // Asynchronously trigger Order Status Update email
@@ -547,11 +552,15 @@ export async function cancelOrderDb(orderId: string) {
     })
     .eq("id", orderId)
     .select("*")
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    console.error("Error cancelling order in Supabase:", error);
-    throw error;
+  if (error || !data) {
+    console.error("Supabase Order Cancellation Failure:", {
+      error,
+      orderId,
+      details: error?.details || error?.message || "No row returned. Check Supabase RLS UPDATE policy on orders table.",
+    });
+    throw error || new Error(`Order cancellation for ${orderId} returned 0 rows. Please verify Supabase RLS policies.`);
   }
 
   // Asynchronously trigger Order Cancelled email

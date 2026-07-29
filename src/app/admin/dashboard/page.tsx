@@ -93,7 +93,8 @@ export default function AdminDashboardPage() {
         setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
       }
     } catch (err: any) {
-      alert("Failed to update status: " + err.message);
+      console.error("Admin order status update failed:", err);
+      alert(`Failed to update status: ${err.message || JSON.stringify(err)}`);
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -118,7 +119,8 @@ export default function AdminDashboardPage() {
         );
       }
     } catch (err: any) {
-      alert("Failed to cancel order: " + err.message);
+      console.error("Admin order cancellation failed:", err);
+      alert(`Failed to cancel order: ${err.message || JSON.stringify(err)}`);
     } finally {
       setIsUpdatingStatus(false);
     }
