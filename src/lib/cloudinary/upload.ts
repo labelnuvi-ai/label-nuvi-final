@@ -9,7 +9,7 @@ export async function uploadToCloudinary(
   options: CloudinaryUploadOptions = {}
 ): Promise<string> {
   const cloudName = options.cloudName || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "vg61jz6i";
-  const uploadPreset = options.uploadPreset || process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "ml_default";
+  const uploadPreset = options.uploadPreset || process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "label_nuvi_uploads";
 
   const formData = new FormData();
   formData.append("file", file);
