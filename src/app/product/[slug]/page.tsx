@@ -49,18 +49,16 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   const openSizeGuide = useQuickViewStore((s) => s.openSizeGuide);
 
   useEffect(() => {
-    if (product && !selectedColor) {
-      setSelectedColor(product.colors[0]);
+    if (product) {
+      if (product.colors && product.colors.length > 0) setSelectedColor(product.colors[0]);
     }
-  }, [product, selectedColor]);
+  }, [product]);
 
   if (loading) {
     return (
-      <div className="py-24 text-center">
+      <div className="py-24 max-w-7xl mx-auto px-6 text-center text-xs font-label uppercase tracking-widest text-[#706C66]">
         <RefreshCw className="w-6 h-6 animate-spin mx-auto text-neutral-400 mb-2" />
-        <p className="text-[10px] font-label uppercase tracking-widest text-[#706C66]">
-          Loading Lookbook details...
-        </p>
+        <span>Loading Haute Couture Silhouette...</span>
       </div>
     );
   }
@@ -89,6 +87,31 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] pb-24">
+      {/* Product JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            image: [product.imageUrl, ...(product.images || [])],
+            description: product.description,
+            sku: product.id,
+            brand: {
+              "@type": "Brand",
+              name: "LABEL NUVI",
+            },
+            offers: {
+              "@type": "Offer",
+              url: `https://labelnuvi.com/product/${product.slug}`,
+              priceCurrency: "INR",
+              price: product.salePrice || product.price,
+              availability: product.isSoldOut ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+            },
+          }),
+        }}
+      />
       {/* 2-Column Luxury Lookbook Split View */}
       <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         
