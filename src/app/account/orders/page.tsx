@@ -27,25 +27,43 @@ export default function MyOrdersPage() {
     }
     const userOrders = await fetchOrdersDb(user.id);
     setOrders(userOrders);
+
+    // Synchronize open order receipt modal with latest orders.status
+    setSelectedOrder((prevSelected) => {
+      if (!prevSelected) return null;
+      const updated = userOrders.find((o) => o.id === prevSelected.id);
+      return updated || prevSelected;
+    });
+
     setLoading(false);
   };
 
   useEffect(() => {
     loadOrders();
 
-    // Listen to real-time order updates for instant customer account reflection
+    const handleFocus = () => {
+      loadOrders();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    // Real-time Postgres changes subscription & polling revalidation
     const channel = supabase
-      .channel("customer-orders-feed")
+      .channel("customer-orders-realtime-feed")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders" },
-        () => {
+        (payload) => {
+          console.log("Realtime order update received:", payload);
           loadOrders();
         }
       )
       .subscribe();
 
+    const interval = setInterval(loadOrders, 5000);
+
     return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, []);
