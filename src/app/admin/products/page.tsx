@@ -43,7 +43,10 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // Form states (Add & Edit share similar keys)
+  // Form states (Add & Edit share similar keys)
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [isSlugUserModified, setIsSlugUserModified] = useState(false);
   const [price, setPrice] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -51,10 +54,21 @@ export default function AdminProductsPage() {
   const [subtitle, setSubtitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("/images/product-dress-front.jpg");
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(["S", "M"]);
+  const [galleryUrl1, setGalleryUrl1] = useState("");
+  const [galleryUrl2, setGalleryUrl2] = useState("");
+  const [galleryUrl3, setGalleryUrl3] = useState("");
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(["S", "M", "L"]);
+  const [colors, setColors] = useState<{ name: string; hex: string }[]>([
+    { name: "Ivory", hex: "#FAF8F5" },
+    { name: "Blush Pink", hex: "#E88DA5" },
+  ]);
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#C8A46B");
+
   const [isNew, setIsNew] = useState(true);
   const [isBestseller, setIsBestseller] = useState(false);
   const [isSoldOut, setIsSoldOut] = useState(false);
+  const [isActive, setIsActive] = useState(true);
 
   // New category form states
   const [catName, setCatName] = useState("");
@@ -83,6 +97,8 @@ export default function AdminProductsPage() {
   const openAddModal = () => {
     setEditingProduct(null);
     setName("");
+    setSlug("");
+    setIsSlugUserModified(false);
     setPrice("");
     setSalePrice("");
     setSelectedCategoryId(categoriesList[0]?.id || "");
@@ -90,27 +106,39 @@ export default function AdminProductsPage() {
     setSubtitle("");
     setDescription("");
     setImageUrl("/images/product-dress-front.jpg");
-    setSelectedSizes(["S", "M"]);
+    setGalleryUrl1("");
+    setGalleryUrl2("");
+    setGalleryUrl3("");
+    setSelectedSizes(["S", "M", "L"]);
+    setColors([{ name: "Ivory", hex: "#FAF8F5" }]);
     setIsNew(true);
     setIsBestseller(false);
     setIsSoldOut(false);
+    setIsActive(true);
     setIsProductModalOpen(true);
   };
 
   const openEditModal = (prod: Product) => {
     setEditingProduct(prod);
     setName(prod.name);
+    setSlug(prod.slug || "");
+    setIsSlugUserModified(true);
     setPrice(String(prod.price));
     setSalePrice(prod.salePrice ? String(prod.salePrice) : "");
     setSelectedCategoryId(prod.categoryId || categoriesList[0]?.id || "");
     setSelectedCollectionId(prod.collectionId || collectionsList[0]?.id || "");
     setSubtitle(prod.subtitle || "");
     setDescription(prod.description || "");
-    setImageUrl(prod.imageUrl || "/images/product-dress-front.jpg");
-    setSelectedSizes(prod.sizes || ["S", "M"]);
+    setImageUrl(prod.imageUrl || (prod.images && prod.images[0]) || "/images/product-dress-front.jpg");
+    setGalleryUrl1(prod.images && prod.images[1] ? prod.images[1] : "");
+    setGalleryUrl2(prod.images && prod.images[2] ? prod.images[2] : "");
+    setGalleryUrl3(prod.images && prod.images[3] ? prod.images[3] : "");
+    setSelectedSizes(prod.sizes || ["S", "M", "L"]);
+    setColors(prod.colors && prod.colors.length > 0 ? prod.colors : [{ name: "Ivory", hex: "#FAF8F5" }]);
     setIsNew(prod.isNew ?? true);
     setIsBestseller(prod.isBestseller ?? false);
     setIsSoldOut(prod.isSoldOut ?? false);
+    setIsActive(prod.isActive ?? true);
     setIsProductModalOpen(true);
   };
 
@@ -129,9 +157,11 @@ export default function AdminProductsPage() {
     const matchedCat = categoriesList.find((c) => c.id === selectedCategoryId);
     const matchedCol = collectionsList.find((c) => c.id === selectedCollectionId);
 
+    const imagesList = [imageUrl, galleryUrl1, galleryUrl2, galleryUrl3].filter((u) => Boolean(u && u.trim()));
+
     const payload = {
       name,
-      slug: name.toLowerCase().replace(/ /g, "-"),
+      slug: slug.trim() || name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
       subtitle: subtitle || "Premium Collection Item",
       description: description || "Crafted from fine fibers for ultimate silhouette structure.",
       price: Number(price),
@@ -140,17 +170,16 @@ export default function AdminProductsPage() {
       categoryName: matchedCat ? matchedCat.name : "Dresses",
       collectionId: selectedCollectionId,
       collectionName: matchedCol ? matchedCol.title : undefined,
-      imageUrl: imageUrl,
-      colors: [
-        { name: "Ivory", hex: "#FAF8F5" },
-        { name: "Atelier Gold", hex: "#C8A46B" },
-      ],
-      sizes: selectedSizes.length > 0 ? (selectedSizes as any) : ["S", "M"],
+      imageUrl: imageUrl || imagesList[0] || "/images/product-dress-front.jpg",
+      images: imagesList.length > 0 ? imagesList : [imageUrl || "/images/product-dress-front.jpg"],
+      colors: colors.length > 0 ? colors : [{ name: "Ivory", hex: "#FAF8F5" }],
+      sizes: selectedSizes.length > 0 ? (selectedSizes as any) : ["S", "M", "L"],
       isNew,
       isBestseller,
       isSoldOut,
-      details: ["Dry clean only", "Made in France"],
-      fabricCare: ["Dry clean only", "Cool iron reverse"],
+      isActive,
+      details: editingProduct?.details || ["Dry clean only", "Made in India"],
+      fabricCare: editingProduct?.fabricCare || ["Dry clean only", "Cool iron reverse"],
     };
 
     try {
@@ -353,41 +382,68 @@ export default function AdminProductsPage() {
             </div>
 
             <form onSubmit={handleProductSubmit} className="space-y-4 text-xs font-label">
-              <div>
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
-                  Product Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Soren Cowl Satin Midi Dress"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                />
+              {/* Product Name & Slug */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                    Product Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Satin Corset Co-Ord Set – Blush Pink"
+                    value={name}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setName(val);
+                      if (!isSlugUserModified) {
+                        setSlug(val.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""));
+                      }
+                    }}
+                    className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                    Slug (Auto-Generated / Editable)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. satin-corset-co-ord-set-blush-pink"
+                    value={slug}
+                    onChange={(e) => {
+                      setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                      setIsSlugUserModified(true);
+                    }}
+                    className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
+                </div>
               </div>
 
+              {/* Prices */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
-                    Original Price (USD)
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                    Price (₹)
                   </label>
                   <input
                     type="number"
                     required
-                    placeholder="490"
+                    placeholder="4999"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                    className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans font-bold text-neutral-900"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
-                    Sale Price (USD)
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                    Sale Price (₹) (Optional)
                   </label>
                   <input
                     type="number"
-                    placeholder="420 (optional)"
+                    placeholder="3999"
                     value={salePrice}
                     onChange={(e) => setSalePrice(e.target.value)}
                     className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
@@ -395,10 +451,11 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
+              {/* Category & Collection */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
-                    Category Index
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                    Category
                   </label>
                   <select
                     value={selectedCategoryId}
@@ -414,8 +471,8 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
-                    Collection Index
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                    Collection
                   </label>
                   <select
                     value={selectedCollectionId}
@@ -431,21 +488,23 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
+              {/* Subtitle */}
               <div>
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
                   Subtitle
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Liquid Silk Gown"
+                  placeholder="e.g. Luminous Satin Evening Co-Ord"
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
                   className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                 />
               </div>
 
+              {/* Description */}
               <div>
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
                   Description
                 </label>
                 <textarea
@@ -457,29 +516,73 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              {/* Main Image URL Input & Live Preview */}
-              <div className="space-y-2.5">
+              {/* Main & Gallery Image URLs */}
+              <div className="space-y-3 pt-2 border-t border-neutral-100">
                 <label className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">
-                  Main Image URL
+                  Main Cover & Gallery Image URLs
                 </label>
-                <div className="flex items-center space-x-4">
-                  <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/50 shrink-0">
-                    <Image src={imageUrl || "/images/product-dress-front.jpg"} alt="Image Preview" fill className="object-cover" />
-                  </div>
 
+                {/* Main Image URL */}
+                <div className="flex items-center space-x-3">
+                  <div className="relative w-12 h-14 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
+                    <Image src={imageUrl || "/images/product-dress-front.jpg"} alt="Main Preview" fill className="object-cover" />
+                  </div>
                   <input
                     type="text"
-                    placeholder="https://images.unsplash.com/... or /images/..."
+                    placeholder="Main Cover Image URL (e.g. /images/satin-corset-blush-pink-front.png)"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    className="bg-[#FAF8F5] text-xs px-4 py-3.5 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                    className="bg-[#FAF8F5] text-xs px-3.5 py-3 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
+                </div>
+
+                {/* Gallery Image 1 */}
+                <div className="flex items-center space-x-3">
+                  <div className="relative w-12 h-14 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
+                    <Image src={galleryUrl1 || imageUrl || "/images/product-dress-front.jpg"} alt="Gallery 1" fill className="object-cover" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Gallery Image URL 1 (e.g. /images/satin-corset-blush-pink-back.jpg)"
+                    value={galleryUrl1}
+                    onChange={(e) => setGalleryUrl1(e.target.value)}
+                    className="bg-[#FAF8F5] text-xs px-3.5 py-3 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
+                </div>
+
+                {/* Gallery Image 2 */}
+                <div className="flex items-center space-x-3">
+                  <div className="relative w-12 h-14 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
+                    <Image src={galleryUrl2 || imageUrl || "/images/product-dress-front.jpg"} alt="Gallery 2" fill className="object-cover" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Gallery Image URL 2 (Optional)"
+                    value={galleryUrl2}
+                    onChange={(e) => setGalleryUrl2(e.target.value)}
+                    className="bg-[#FAF8F5] text-xs px-3.5 py-3 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
+                </div>
+
+                {/* Gallery Image 3 */}
+                <div className="flex items-center space-x-3">
+                  <div className="relative w-12 h-14 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
+                    <Image src={galleryUrl3 || imageUrl || "/images/product-dress-front.jpg"} alt="Gallery 3" fill className="object-cover" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Gallery Image URL 3 (Optional)"
+                    value={galleryUrl3}
+                    onChange={(e) => setGalleryUrl3(e.target.value)}
+                    className="bg-[#FAF8F5] text-xs px-3.5 py-3 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                   />
                 </div>
               </div>
 
+              {/* Sizes Selection */}
               <div>
-                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5">
-                  Sizes Availability
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                  Available Sizes
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {["XXS", "XS", "S", "M", "L", "XL", "XXL"].map((sz) => (
@@ -488,7 +591,9 @@ export default function AdminProductsPage() {
                       type="button"
                       onClick={() => handleSizeToggle(sz)}
                       className={`w-10 h-10 rounded-xl text-xs flex items-center justify-center font-bold border transition-colors ${
-                        selectedSizes.includes(sz) ? "bg-black text-white border-black" : "bg-[#FAF8F5] text-neutral-800 border-neutral-200 hover:border-black"
+                        selectedSizes.includes(sz)
+                          ? "bg-black text-white border-black"
+                          : "bg-[#FAF8F5] text-neutral-800 border-neutral-200 hover:border-black"
                       }`}
                     >
                       {sz}
@@ -497,9 +602,61 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              {/* Toggles */}
-              <div className="grid grid-cols-3 gap-4 border-t border-neutral-100 pt-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
+              {/* Dynamic Colours List */}
+              <div className="space-y-2.5 pt-2 border-t border-neutral-100">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">
+                  Available Colours (Dynamic List)
+                </label>
+
+                <div className="flex flex-wrap gap-2">
+                  {colors.map((c, idx) => (
+                    <div key={idx} className="flex items-center space-x-2 bg-[#FAF8F5] border border-neutral-200 px-3 py-1.5 rounded-xl">
+                      <span className="w-4 h-4 rounded-full border border-neutral-300 shrink-0" style={{ backgroundColor: c.hex }} />
+                      <span className="text-xs font-semibold text-neutral-800">{c.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setColors(colors.filter((_, i) => i !== idx))}
+                        className="text-neutral-400 hover:text-red-600 font-bold ml-1"
+                        title="Remove Colour"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex space-x-2 pt-1">
+                  <input
+                    type="text"
+                    placeholder="Colour Name (e.g. Blush Pink)"
+                    value={newColorName}
+                    onChange={(e) => setNewColorName(e.target.value)}
+                    className="bg-[#FAF8F5] text-xs px-3.5 py-2.5 flex-1 rounded-xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
+                  <input
+                    type="color"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    className="w-10 h-10 rounded-xl border border-neutral-200 p-0.5 cursor-pointer bg-white"
+                    title="Choose Hex Swatch"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newColorName.trim()) return;
+                      setColors([...colors, { name: newColorName.trim(), hex: newColorHex }]);
+                      setNewColorName("");
+                    }}
+                    className="bg-black text-white text-xs px-4 py-2.5 rounded-xl font-semibold uppercase tracking-wider hover:bg-neutral-800 transition-colors"
+                  >
+                    Add Color
+                  </button>
+                </div>
+              </div>
+
+              {/* Product Status Toggles */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-neutral-100 pt-4">
+                <label className="flex items-center space-x-2 cursor-pointer bg-[#FAF8F5] p-2.5 rounded-xl border border-neutral-200/80">
                   <input
                     type="checkbox"
                     checked={isNew}
@@ -509,7 +666,7 @@ export default function AdminProductsPage() {
                   <span className="text-[10px] font-semibold text-neutral-800">NEW ARRIVAL</span>
                 </label>
 
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-2 cursor-pointer bg-[#FAF8F5] p-2.5 rounded-xl border border-neutral-200/80">
                   <input
                     type="checkbox"
                     checked={isBestseller}
@@ -519,7 +676,7 @@ export default function AdminProductsPage() {
                   <span className="text-[10px] font-semibold text-neutral-800">BESTSELLER</span>
                 </label>
 
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-2 cursor-pointer bg-[#FAF8F5] p-2.5 rounded-xl border border-neutral-200/80">
                   <input
                     type="checkbox"
                     checked={isSoldOut}
@@ -527,6 +684,16 @@ export default function AdminProductsPage() {
                     className="accent-black rounded"
                   />
                   <span className="text-[10px] font-semibold text-red-600">SOLD OUT</span>
+                </label>
+
+                <label className="flex items-center space-x-2 cursor-pointer bg-[#FAF8F5] p-2.5 rounded-xl border border-neutral-200/80">
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="accent-black rounded"
+                  />
+                  <span className="text-[10px] font-semibold text-emerald-700">ACTIVE</span>
                 </label>
               </div>
 

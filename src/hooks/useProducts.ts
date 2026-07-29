@@ -52,10 +52,10 @@ export function useProducts() {
             subtitle: row.subtitle || "Premium Drop Silhouette",
             description: row.description || "Crafted from hand-selected luxurious materials.",
             price: Number(row.price),
-            salePrice: row.sale_price ? Number(row.sale_price) : undefined,
             isNew: row.is_new ?? true,
             isBestseller: row.is_bestseller ?? false,
             isSoldOut: row.is_sold_out ?? false,
+            isActive: row.is_active ?? true,
             imageUrl: mainImageUrl,
             images: Array.isArray(row.images) && row.images.length > 0 ? row.images : [mainImageUrl],
             colors: Array.isArray(row.colors) ? row.colors : [{ name: "Ivory", hex: "#FAF8F5" }],
@@ -251,7 +251,7 @@ export function useProducts() {
       is_new: productData.isNew ?? true,
       is_bestseller: productData.isBestseller ?? false,
       is_sold_out: productData.isSoldOut ?? false,
-      is_active: true,
+      is_active: productData.isActive ?? true,
       created_at: now,
       updated_at: now,
     };
@@ -296,6 +296,7 @@ export function useProducts() {
     if (productData.isNew !== undefined) dbRow.is_new = productData.isNew;
     if (productData.isBestseller !== undefined) dbRow.is_bestseller = productData.isBestseller;
     if (productData.isSoldOut !== undefined) dbRow.is_sold_out = productData.isSoldOut;
+    if (productData.isActive !== undefined) dbRow.is_active = productData.isActive;
     if (productData.categoryId !== undefined) dbRow.category_id = productData.categoryId;
     if (productData.collectionId !== undefined) dbRow.collection_id = productData.collectionId;
     if (productData.imageUrl !== undefined) {

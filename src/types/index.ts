@@ -39,6 +39,7 @@ export interface Product {
   isNew?: boolean;
   isBestseller?: boolean;
   isSoldOut?: boolean;
+  isActive?: boolean;
   imageUrl: string;
   images: string[];
   colors: ProductColor[];
