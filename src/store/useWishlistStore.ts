@@ -43,10 +43,28 @@ export const useWishlistStore = create<WishlistState>()(
         }
       },
       isInWishlist: (productId) => get().wishlistIds.includes(productId),
-      syncWishlist: async (userId) => {
+      syncWishlist: async (userId: string) => {
         try {
+          const localIds = get().wishlistIds;
           const dbIds = await fetchWishlist(userId);
-          set({ wishlistIds: dbIds });
+
+          if (localIds.length > 0) {
+            const mergedSet = new Set<string>([...dbIds, ...localIds]);
+            const newIdsToAdd = localIds.filter((id) => !dbIds.includes(id));
+
+            for (const productId of newIdsToAdd) {
+              try {
+                await addToWishlistDb(userId, productId);
+              } catch (e) {
+                console.error("Failed to merge wishlist item to DB:", e);
+              }
+            }
+
+            const unifiedList = Array.from(mergedSet);
+            set({ wishlistIds: unifiedList });
+          } else {
+            set({ wishlistIds: dbIds });
+          }
         } catch (err) {
           console.error("Failed to fetch wishlist from database:", err);
         }

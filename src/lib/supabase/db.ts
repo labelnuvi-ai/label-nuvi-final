@@ -33,39 +33,52 @@ export async function updateProfile(userId: string, updates: { full_name?: strin
 
 // 2. Wishlist Operations
 export async function fetchWishlist(userId: string): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("wishlist_items")
-    .select("product_id")
-    .eq("user_id", userId);
+  try {
+    const { data, error } = await supabase
+      .from("wishlist_items")
+      .select("product_id")
+      .eq("user_id", userId);
 
-  if (error) {
-    console.error("Error fetching wishlist:", error);
+    if (error) {
+      if (error.code !== "PGRST205") {
+        console.error("Error fetching wishlist:", error);
+      }
+      return [];
+    }
+    return (data || []).map((item) => item.product_id);
+  } catch (err) {
+    console.error("Wishlist DB fetch exception:", err);
     return [];
   }
-  return data.map((item) => item.product_id);
 }
 
 export async function addToWishlistDb(userId: string, productId: string) {
-  const { error } = await supabase
-    .from("wishlist_items")
-    .upsert({ user_id: userId, product_id: productId });
+  try {
+    const { error } = await supabase
+      .from("wishlist_items")
+      .upsert({ user_id: userId, product_id: productId });
 
-  if (error) {
-    console.error("Error adding to wishlist:", error);
-    throw error;
+    if (error && error.code !== "PGRST205") {
+      console.error("Error adding to wishlist:", error);
+    }
+  } catch (err) {
+    console.error("Wishlist DB add exception:", err);
   }
 }
 
 export async function removeFromWishlistDb(userId: string, productId: string) {
-  const { error } = await supabase
-    .from("wishlist_items")
-    .delete()
-    .eq("user_id", userId)
-    .eq("product_id", productId);
+  try {
+    const { error } = await supabase
+      .from("wishlist_items")
+      .delete()
+      .eq("user_id", userId)
+      .eq("product_id", productId);
 
-  if (error) {
-    console.error("Error removing from wishlist:", error);
-    throw error;
+    if (error && error.code !== "PGRST205") {
+      console.error("Error removing from wishlist:", error);
+    }
+  } catch (err) {
+    console.error("Wishlist DB remove exception:", err);
   }
 }
 
