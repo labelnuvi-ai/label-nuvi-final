@@ -243,19 +243,23 @@ export async function createOrderDb(userId: string | null, order: any) {
 
   const orderId = insertedOrder.id;
 
-  // Insert order_items
+  // Insert order_items for each purchased product
   if (order.items && order.items.length > 0) {
-    const itemRows = order.items.map((item: any) => ({
-      order_id: orderId,
-      product_id: item.productId,
-      product_name: item.productName,
-      product_image: item.productImage || "/images/product-dress-front.jpg",
-      color: item.color || "Standard",
-      size: item.size || "M",
-      unit_price: Number(item.unitPrice || item.price || 0),
-      quantity: Number(item.quantity || 1),
-      created_at: now,
-    }));
+    const itemRows = order.items.map((item: any) => {
+      const rawPid = item.productId || item.id || "";
+      const isUuid = typeof rawPid === "string" && rawPid.includes("-") && rawPid.length === 36;
+      return {
+        order_id: orderId,
+        product_id: isUuid ? rawPid : null,
+        product_name: item.productName || "LABEL NUVI Silhouette",
+        product_image: item.productImage || "/images/product-dress-front.jpg",
+        color: item.color || "Standard",
+        size: item.size || "M",
+        unit_price: Number(item.unitPrice || item.price || 0),
+        quantity: Number(item.quantity || 1),
+        created_at: now,
+      };
+    });
 
     const { error: itemsError } = await supabase.from("order_items").insert(itemRows);
     if (itemsError) {

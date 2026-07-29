@@ -292,6 +292,7 @@ export default function AdminDashboardPage() {
             <thead>
               <tr className="border-b border-neutral-200 text-[10px] text-neutral-400 uppercase tracking-widest font-semibold">
                 <th className="py-3 px-2">Order #</th>
+                <th className="py-3 px-2">Silhouettes</th>
                 <th className="py-3 px-2">Client Details</th>
                 <th className="py-3 px-2">Date</th>
                 <th className="py-3 px-2">Total Amount</th>
@@ -303,7 +304,7 @@ export default function AdminDashboardPage() {
             <tbody className="divide-y divide-neutral-100 font-sans">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-xs text-neutral-400 font-label uppercase tracking-widest">
+                  <td colSpan={8} className="py-12 text-center text-xs text-neutral-400 font-label uppercase tracking-widest">
                     No orders matching selected criteria.
                   </td>
                 </tr>
@@ -311,6 +312,38 @@ export default function AdminDashboardPage() {
                 filteredOrders.map((ord) => (
                   <tr key={ord.id} className="hover:bg-[#FAF8F5] transition-colors">
                     <td className="py-4 px-2 font-mono font-bold text-neutral-900">{ord.orderNumber}</td>
+                    <td className="py-4 px-2">
+                      <div className="flex items-center space-x-1.5 overflow-hidden">
+                        {ord.items && ord.items.length > 0 ? (
+                          ord.items.slice(0, 3).map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="relative w-8 h-10 bg-neutral-100 rounded-md overflow-hidden shrink-0 border border-neutral-200 shadow-luxury-xs"
+                              title={`${item.productName} (${item.size})`}
+                            >
+                              <Image
+                                src={item.productImage || "/images/product-dress-front.jpg"}
+                                alt={item.productName}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          <div className="relative w-8 h-10 bg-neutral-100 rounded-md overflow-hidden shrink-0 border border-neutral-200">
+                            <Image
+                              src="/images/product-dress-front.jpg"
+                              alt="Product Thumbnail"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
+                        {ord.items && ord.items.length > 3 && (
+                          <span className="text-[10px] font-label font-bold text-neutral-400">+{ord.items.length - 3}</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-4 px-2">
                       <p className="font-semibold text-neutral-900">{ord.shippingAddress.fullName}</p>
                       <p className="text-[11px] text-neutral-500">{ord.shippingAddress.email || ord.shippingAddress.phone}</p>
