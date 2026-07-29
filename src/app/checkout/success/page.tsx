@@ -100,7 +100,7 @@ export default function OrderSuccessPage({ searchParams }: SuccessPageProps) {
                     <span className="text-neutral-900 font-medium uppercase">
                       {item.product_name} ({item.size}) &times; {item.quantity}
                     </span>
-                    <span className="font-bold text-neutral-900">₹{Number(item.price || item.unit_price || 0).toFixed(2)}</span>
+                    <span className="font-bold text-neutral-900">₹{Number(item.price || 0).toFixed(2)}</span>
                   </div>
                 ))}
               </div>

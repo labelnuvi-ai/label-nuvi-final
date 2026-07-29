@@ -207,18 +207,14 @@ export async function createOrderDb(userId: string | null, order: any) {
   const orderRow = {
     user_id: userId,
     order_number: order.orderNumber,
-    date: order.date || now.split("T")[0],
     subtotal: Number(order.subtotal || 0),
     discount: Number(order.discount || 0),
     shipping: Number(order.shipping || 0),
     tax: Number(order.tax || 0),
     total: Number(order.total || 0),
     coupon_code: order.couponCode || order.appliedCoupon?.code || null,
-    status: order.orderStatus || order.status || "Processing",
     order_status: order.orderStatus || order.status || "Processing",
     payment_status: order.paymentStatus || "Pending",
-    payment_method: order.paymentMethod || "Razorpay / Online",
-    payment_id: order.razorpayPaymentId || order.paymentId || null,
     razorpay_order_id: order.razorpayOrderId || null,
     razorpay_payment_id: order.razorpayPaymentId || order.paymentId || null,
     address_id: order.addressId || null,
@@ -234,6 +230,7 @@ export async function createOrderDb(userId: string | null, order: any) {
     shipping_postal_code: order.shippingAddress?.postalCode || "",
     shipping_country: order.shippingAddress?.country || "",
     created_at: now,
+    updated_at: now,
   };
 
   const { data: insertedOrder, error: orderError } = await supabase
@@ -258,8 +255,7 @@ export async function createOrderDb(userId: string | null, order: any) {
       product_image: item.productImage,
       color: item.color || "Standard",
       size: item.size,
-      price: Number(item.unitPrice || item.price || 0),
-      unit_price: Number(item.unitPrice || item.price || 0),
+      price: Number(item.price || item.unitPrice || 0),
       quantity: Number(item.quantity || 1),
       created_at: now,
     }));
@@ -278,8 +274,8 @@ export async function createOrderDb(userId: string | null, order: any) {
     const formattedOrder: Order = {
       id: orderId,
       orderNumber: order.orderNumber,
-      date: orderRow.date,
-      status: orderRow.status as any,
+      date: now.split("T")[0],
+      status: orderRow.order_status as any,
       items: (order.items || []).map((i: any, idx: number) => ({
         id: `oi-${idx}`,
         productId: i.productId,
@@ -287,7 +283,7 @@ export async function createOrderDb(userId: string | null, order: any) {
         productImage: i.productImage || "/images/product-dress-front.jpg",
         color: i.color || "Standard",
         size: i.size,
-        unitPrice: Number(i.unitPrice || i.price || 0),
+        unitPrice: Number(i.price || i.unitPrice || 0),
         quantity: Number(i.quantity || 1),
       })),
       subtotal: orderRow.subtotal,
@@ -309,9 +305,9 @@ export async function createOrderDb(userId: string | null, order: any) {
         country: orderRow.shipping_country,
         isDefault: true,
       },
-      paymentMethod: orderRow.payment_method,
+      paymentMethod: order.paymentMethod || "Razorpay",
       paymentStatus: orderRow.payment_status as any,
-      paymentId: orderRow.payment_id,
+      paymentId: orderRow.razorpay_payment_id,
       razorpayOrderId: orderRow.razorpay_order_id,
       razorpayPaymentId: orderRow.razorpay_payment_id,
     };
@@ -381,19 +377,19 @@ export async function fetchOrdersDb(userId?: string): Promise<Order[]> {
     return (ordersData || []).map((row: any) => ({
       id: row.id,
       orderNumber: row.order_number,
-      date: row.date || row.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
-      status: row.order_status || row.status || "Pending",
+      date: row.created_at ? row.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
+      status: row.order_status || "Pending",
       subtotal: Number(row.subtotal || 0),
       discount: Number(row.discount || 0),
       shipping: Number(row.shipping || 0),
       tax: Number(row.tax || 0),
       total: Number(row.total || 0),
       trackingNumber: row.tracking_number || null,
-      paymentMethod: row.payment_method || "Razorpay / Online",
+      paymentMethod: row.razorpay_payment_id ? "Razorpay" : "Online Payment",
       paymentStatus: row.payment_status || "Pending",
-      paymentId: row.payment_id || row.razorpay_payment_id || null,
+      paymentId: row.razorpay_payment_id || null,
       razorpayOrderId: row.razorpay_order_id || null,
-      razorpayPaymentId: row.razorpay_payment_id || row.payment_id || null,
+      razorpayPaymentId: row.razorpay_payment_id || null,
       shippingAddress: {
         id: "addr-" + row.id,
         label: "Delivery Address",
@@ -415,7 +411,7 @@ export async function fetchOrdersDb(userId?: string): Promise<Order[]> {
         productImage: item.product_image || "/images/product-dress-front.jpg",
         color: item.color || "Standard",
         size: item.size || "M",
-        unitPrice: Number(item.price || item.unit_price || 0),
+        unitPrice: Number(item.price || 0),
         quantity: Number(item.quantity || 1),
       })),
     }));
@@ -429,7 +425,6 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
   const { data, error } = await supabase
     .from("orders")
     .update({
-      status: status,
       order_status: status,
       updated_at: new Date().toISOString(),
     })
@@ -453,8 +448,8 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
     const formattedOrder: Order = {
       id: data.id,
       orderNumber: data.order_number,
-      date: data.date || data.created_at?.split("T")[0],
-      status: data.order_status || data.status,
+      date: data.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
+      status: data.order_status,
       items: (data.order_items || []).map((i: any) => ({
         id: i.id,
         productId: i.product_id,
@@ -462,7 +457,7 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
         productImage: i.product_image || "/images/product-dress-front.jpg",
         color: i.color || "Standard",
         size: i.size || "M",
-        unitPrice: Number(i.price || i.unit_price || 0),
+        unitPrice: Number(i.price || 0),
         quantity: Number(i.quantity || 1),
       })),
       subtotal: Number(data.subtotal || 0),
@@ -484,7 +479,7 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
         country: data.shipping_country || "",
         isDefault: true,
       },
-      paymentMethod: data.payment_method || "Online",
+      paymentMethod: data.razorpay_payment_id ? "Razorpay" : "Online Payment",
       trackingNumber: data.tracking_number,
     };
 
@@ -508,7 +503,6 @@ export async function cancelOrderDb(orderId: string) {
   const { data, error } = await supabase
     .from("orders")
     .update({
-      status: "Cancelled",
       order_status: "Cancelled",
       payment_status: "Cancelled",
       updated_at: new Date().toISOString(),
@@ -533,7 +527,7 @@ export async function cancelOrderDb(orderId: string) {
     const formattedOrder: Order = {
       id: data.id,
       orderNumber: data.order_number,
-      date: data.date || data.created_at?.split("T")[0],
+      date: data.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
       status: "Cancelled",
       items: (data.order_items || []).map((i: any) => ({
         id: i.id,
@@ -542,7 +536,7 @@ export async function cancelOrderDb(orderId: string) {
         productImage: i.product_image || "/images/product-dress-front.jpg",
         color: i.color || "Standard",
         size: i.size || "M",
-        unitPrice: Number(i.price || i.unit_price || 0),
+        unitPrice: Number(i.price || 0),
         quantity: Number(i.quantity || 1),
       })),
       subtotal: Number(data.subtotal || 0),
@@ -564,7 +558,7 @@ export async function cancelOrderDb(orderId: string) {
         country: data.shipping_country || "",
         isDefault: true,
       },
-      paymentMethod: data.payment_method || "Online",
+      paymentMethod: data.razorpay_payment_id ? "Razorpay" : "Online Payment",
     };
 
     const recipientEmail = data.shipping_email || "client@labelnuvi.com";
