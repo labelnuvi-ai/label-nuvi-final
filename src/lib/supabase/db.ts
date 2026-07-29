@@ -499,13 +499,24 @@ export async function fetchOrdersDb(userId?: string): Promise<Order[]> {
 export async function updateOrderStatusDb(orderId: string, status: string) {
   console.log(`Executing updateOrderStatusDb for order ${orderId} -> ${status}`);
 
-  const { data, error } = await supabase
-    .from("orders")
-    .update({
-      status: status,
-    })
-    .eq("id", orderId)
-    .select();
+  // Build match query targeting id or order_number
+  let query = supabase.from("orders").update({ status: status });
+
+  if (typeof orderId === "string" && orderId.includes("-") && orderId.length === 36) {
+    query = query.eq("id", orderId);
+  } else {
+    query = query.or(`id.eq.${orderId},order_number.eq.${orderId}`);
+  }
+
+  const { data, error } = await query.select();
+
+  console.log("Supabase Order Status UPDATE Raw Response:", {
+    orderId,
+    status,
+    data,
+    error,
+    rowsUpdated: data ? data.length : 0,
+  });
 
   if (error) {
     console.error("Supabase Order Status Update Error:", {
@@ -516,10 +527,16 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
       orderId,
       status,
     });
-    throw new Error(`Supabase DB Error [${error.code}]: ${error.message}`);
+    throw new Error(`Supabase DB Update Error [${error.code}]: ${error.message}`);
   }
 
-  const updatedRow = (data && data.length > 0) ? data[0] : { id: orderId, status };
+  if (!data || data.length === 0) {
+    const errorMsg = `Database UPDATE failed for order '${orderId}': 0 rows affected. Please verify that an RLS policy permits UPDATE on the 'orders' table in Supabase.`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  const updatedRow = data[0];
 
   // Asynchronously trigger Order Status Update email
   try {
@@ -585,14 +602,27 @@ export async function updateOrderStatusDb(orderId: string, status: string) {
 export async function cancelOrderDb(orderId: string) {
   console.log(`Executing cancelOrderDb for order ${orderId}`);
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("orders")
     .update({
       status: "Cancelled",
       payment_status: "Cancelled",
-    })
-    .eq("id", orderId)
-    .select();
+    });
+
+  if (typeof orderId === "string" && orderId.includes("-") && orderId.length === 36) {
+    query = query.eq("id", orderId);
+  } else {
+    query = query.or(`id.eq.${orderId},order_number.eq.${orderId}`);
+  }
+
+  const { data, error } = await query.select();
+
+  console.log("Supabase Order Cancellation Raw Response:", {
+    orderId,
+    data,
+    error,
+    rowsUpdated: data ? data.length : 0,
+  });
 
   if (error) {
     console.error("Supabase Order Cancellation Error:", {
@@ -602,10 +632,16 @@ export async function cancelOrderDb(orderId: string) {
       hint: error.hint,
       orderId,
     });
-    throw new Error(`Supabase DB Error [${error.code}]: ${error.message}`);
+    throw new Error(`Supabase DB Cancellation Error [${error.code}]: ${error.message}`);
   }
 
-  const updatedRow = (data && data.length > 0) ? data[0] : { id: orderId, status: "Cancelled", payment_status: "Cancelled" };
+  if (!data || data.length === 0) {
+    const errorMsg = `Database Cancellation failed for order '${orderId}': 0 rows affected. Please verify that an RLS policy permits UPDATE on the 'orders' table in Supabase.`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  const updatedRow = data[0];
 
   // Asynchronously trigger Order Cancelled email
   try {

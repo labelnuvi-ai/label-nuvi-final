@@ -84,17 +84,23 @@ export default function AdminDashboardPage() {
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     setIsUpdatingStatus(true);
     try {
-      await updateOrderStatusDb(orderId, newStatus);
-      // Immediately update local state
+      const updatedRow = await updateOrderStatusDb(orderId, newStatus);
+      const confirmedStatus = updatedRow.status || newStatus;
+
+      // Update local state strictly AFTER database confirms persistence
       setOrders((prev) =>
-        prev.map((ord) => (ord.id === orderId ? { ...ord, status: newStatus as any } : ord))
+        prev.map((ord) =>
+          ord.id === orderId || ord.orderNumber === orderId
+            ? { ...ord, status: confirmedStatus as any }
+            : ord
+        )
       );
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
+      if (selectedOrder && (selectedOrder.id === orderId || selectedOrder.orderNumber === orderId)) {
+        setSelectedOrder((prev) => (prev ? { ...prev, status: confirmedStatus as any } : null));
       }
     } catch (err: any) {
       console.error("Admin order status update failed:", err);
-      alert(`Failed to update status: ${err.message || JSON.stringify(err)}`);
+      alert(`Status Update Failed:\n\n${err.message || JSON.stringify(err)}`);
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -105,22 +111,24 @@ export default function AdminDashboardPage() {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     setIsUpdatingStatus(true);
     try {
-      await cancelOrderDb(orderId);
+      const updatedRow = await cancelOrderDb(orderId);
+      const confirmedStatus = updatedRow.status || "Cancelled";
+
       setOrders((prev) =>
         prev.map((ord) =>
-          ord.id === orderId
-            ? { ...ord, status: "Cancelled" as any, paymentStatus: "Cancelled" as any }
+          ord.id === orderId || ord.orderNumber === orderId
+            ? { ...ord, status: confirmedStatus as any, paymentStatus: "Cancelled" as any }
             : ord
         )
       );
-      if (selectedOrder && selectedOrder.id === orderId) {
+      if (selectedOrder && (selectedOrder.id === orderId || selectedOrder.orderNumber === orderId)) {
         setSelectedOrder((prev) =>
-          prev ? { ...prev, status: "Cancelled" as any, paymentStatus: "Cancelled" as any } : null
+          prev ? { ...prev, status: confirmedStatus as any, paymentStatus: "Cancelled" as any } : null
         );
       }
     } catch (err: any) {
       console.error("Admin order cancellation failed:", err);
-      alert(`Failed to cancel order: ${err.message || JSON.stringify(err)}`);
+      alert(`Order Cancellation Failed:\n\n${err.message || JSON.stringify(err)}`);
     } finally {
       setIsUpdatingStatus(false);
     }
