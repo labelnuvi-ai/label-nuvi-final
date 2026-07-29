@@ -272,55 +272,114 @@ export async function createOrderDb(userId: string | null, order: any) {
   return insertedOrder;
 }
 
-export async function fetchOrdersDb(userId: string): Promise<Order[]> {
-  const { data: ordersData, error: ordersError } = await supabase
-    .from("orders")
-    .select(`
-      *,
-      order_items (*)
-    `)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+export async function fetchOrdersDb(userId?: string): Promise<Order[]> {
+  try {
+    let query = supabase
+      .from("orders")
+      .select(`
+        *,
+        order_items (*)
+      `)
+      .order("created_at", { ascending: false });
 
-  if (ordersError) {
-    console.error("Error fetching user orders:", ordersError);
+    if (userId) {
+      query = query.eq("user_id", userId);
+    }
+
+    const { data: ordersData, error: ordersError } = await query;
+
+    if (ordersError) {
+      if (ordersError.code !== "PGRST205") {
+        console.error("Error fetching user orders:", ordersError);
+      }
+      return [];
+    }
+
+    // Map rows back to Order TypeScript interface
+    return (ordersData || []).map((row: any) => ({
+      id: row.id,
+      orderNumber: row.order_number,
+      date: row.date || row.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
+      status: row.order_status || row.status || "Pending",
+      subtotal: Number(row.subtotal || 0),
+      discount: Number(row.discount || 0),
+      shipping: Number(row.shipping || 0),
+      tax: Number(row.tax || 0),
+      total: Number(row.total || 0),
+      trackingNumber: row.tracking_number || null,
+      paymentMethod: row.payment_method || "Razorpay / Online",
+      paymentStatus: row.payment_status || "Pending",
+      paymentId: row.payment_id || row.razorpay_payment_id || null,
+      razorpayOrderId: row.razorpay_order_id || null,
+      razorpayPaymentId: row.razorpay_payment_id || row.payment_id || null,
+      shippingAddress: {
+        id: "addr-" + row.id,
+        label: "Delivery Address",
+        fullName: row.shipping_name || "Client",
+        email: row.shipping_email || "",
+        phone: row.shipping_phone || "",
+        addressLine1: row.shipping_address_line1 || "",
+        addressLine2: row.shipping_address_line2 || "",
+        city: row.shipping_city || "",
+        state: row.shipping_state || "",
+        postalCode: row.shipping_postal_code || "",
+        country: row.shipping_country || "",
+        isDefault: true,
+      },
+      items: (row.order_items || []).map((item: any) => ({
+        id: item.id,
+        productId: item.product_id,
+        productName: item.product_name,
+        productImage: item.product_image || "/images/product-dress-front.jpg",
+        color: item.color || "Standard",
+        size: item.size || "M",
+        unitPrice: Number(item.price || item.unit_price || 0),
+        quantity: Number(item.quantity || 1),
+      })),
+    }));
+  } catch (err) {
+    console.error("fetchOrdersDb exception:", err);
     return [];
   }
+}
 
-  // Map rows back to Order TypeScript interface
-  return (ordersData || []).map((row) => ({
-    id: row.id,
-    orderNumber: row.order_number,
-    date: row.date,
-    status: row.status,
-    subtotal: Number(row.subtotal),
-    discount: Number(row.discount),
-    shipping: Number(row.shipping),
-    total: Number(row.total),
-    trackingNumber: row.tracking_number,
-    paymentMethod: row.payment_method,
-    shippingAddress: {
-      id: "addr-" + row.id,
-      label: "Delivery Address",
-      fullName: row.shipping_name,
-      addressLine1: row.shipping_address_line1,
-      addressLine2: row.shipping_address_line2,
-      city: row.shipping_city,
-      state: row.shipping_state,
-      postalCode: row.shipping_postal_code,
-      country: row.shipping_country,
-      phone: row.shipping_phone,
-      isDefault: true,
-    },
-    items: (row.order_items || []).map((item: any) => ({
-      id: item.id,
-      productId: item.product_id,
-      productName: item.product_name,
-      productImage: item.product_image,
-      color: item.color,
-      size: item.size as any,
-      unitPrice: Number(item.unit_price),
-      quantity: item.quantity,
-    })),
-  }));
+export async function updateOrderStatusDb(orderId: string, status: string) {
+  const { data, error } = await supabase
+    .from("orders")
+    .update({
+      status: status,
+      order_status: status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating order status in Supabase:", error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function cancelOrderDb(orderId: string) {
+  const { data, error } = await supabase
+    .from("orders")
+    .update({
+      status: "Cancelled",
+      order_status: "Cancelled",
+      payment_status: "Cancelled",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error cancelling order in Supabase:", error);
+    throw error;
+  }
+
+  return data;
 }

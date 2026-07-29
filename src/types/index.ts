@@ -104,6 +104,7 @@ export interface UserAddress {
   id: string;
   label: string;
   fullName: string;
+  email?: string;
   addressLine1: string;
   addressLine2?: string;
   city: string;
@@ -129,15 +130,20 @@ export interface Order {
   id: string;
   orderNumber: string;
   date: string;
-  status: "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  status: "Pending" | "Paid" | "Processing" | "Packed" | "Shipped" | "Delivered" | "Cancelled";
   items: OrderItem[];
   subtotal: number;
   discount: number;
   shipping: number;
+  tax?: number;
   total: number;
   shippingAddress: UserAddress;
-  paymentMethod: "Stripe / Card" | "Razorpay" | "Apple Pay";
-  trackingNumber?: string;
+  paymentMethod: string;
+  paymentStatus?: "Pending" | "Paid" | "Failed" | "Cancelled";
+  paymentId?: string | null;
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
+  trackingNumber?: string | null;
 }
 
 export interface UserProfile {
