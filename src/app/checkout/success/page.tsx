@@ -28,9 +28,9 @@ export default function OrderSuccessPage({ searchParams }: SuccessPageProps) {
         const supabase = createClient();
         const { data } = await supabase
           .from("orders")
-          .select("*, order_items(*)")
+          .select("*")
           .eq("order_number", orderNumber)
-          .single();
+          .maybeSingle();
 
         if (data) {
           setOrderDetails(data);
