@@ -157,28 +157,38 @@ export const useCartStore = create<CartState>()(
           return { success: false, message: "Please add a product to cart first before applying a coupon" };
         }
         const cleanCode = code.trim().toUpperCase();
+        const availableCoupons = useCouponStore.getState().coupons;
         const found =
+          availableCoupons.find((c) => c.code.trim().toUpperCase() === cleanCode) ||
           useCouponStore.getState().getCouponByCode(cleanCode) ||
           INITIAL_COUPONS.find((c) => c.code.trim().toUpperCase() === cleanCode);
 
         if (!found) {
-          return { success: false, message: "Invalid promo code. Please try NUVI99, NUVI15, or NUVI10." };
+          return { success: false, message: `Invalid promo code '${cleanCode}'. Please try NUVI99, NUVI15, or NUVI10.` };
         }
+
         if (found.status === "Inactive") {
-          return { success: false, message: "This promo code is currently inactive." };
+          return { success: false, message: `Promo code '${cleanCode}' is currently inactive.` };
         }
+
         const today = new Date().toISOString().split("T")[0];
         if (found.validUntil && found.validUntil < today) {
-          return { success: false, message: "This promo code has expired." };
+          return { success: false, message: `Promo code '${cleanCode}' expired on ${found.validUntil}.` };
         }
+
+        if (found.usageLimit && (found.usedCount || 0) >= found.usageLimit) {
+          return { success: false, message: `Promo code '${cleanCode}' has reached its maximum redemptions.` };
+        }
+
         const subtotal = get().getSubtotal();
         const minVal = found.minPurchase ?? found.minSpend ?? 0;
         if (minVal > 0 && subtotal < minVal) {
           return {
             success: false,
-            message: `Minimum purchase of ₹${minVal} required for code ${found.code}`,
+            message: `Minimum purchase of ₹${minVal} required for code ${found.code} (Current: ₹${subtotal}).`,
           };
         }
+
         set({ appliedCoupon: found });
         return { success: true, message: `Promo code ${found.code} applied successfully!` };
       },

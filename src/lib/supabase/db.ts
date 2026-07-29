@@ -213,6 +213,7 @@ export async function createOrderDb(userId: string | null, order: any) {
     shipping: Number(order.shipping || 0),
     tax: Number(order.tax || 0),
     total: Number(order.total || 0),
+    coupon_code: order.couponCode || order.appliedCoupon?.code || null,
     status: order.orderStatus || order.status || "Processing",
     order_status: order.orderStatus || order.status || "Processing",
     payment_status: order.paymentStatus || "Pending",
