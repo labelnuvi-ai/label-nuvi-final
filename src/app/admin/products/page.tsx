@@ -23,26 +23,21 @@ export default function AdminProductsPage() {
     addCategory,
     updateCategory,
     deleteCategory,
+    addCollection,
+    updateCollection,
+    deleteCollection,
   } = useProducts();
 
-  const [collectionsList, setCollectionsList] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    if (collections.length > 0) {
-      setCollectionsList(collections);
-      if (!selectedCollectionId) {
-        setSelectedCollectionId(collections[0].id);
-      }
-    }
-  }, [collections]);
 
   // Modals state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
 
   // Form states (Add & Edit share similar keys)
   const [name, setName] = useState("");
@@ -78,11 +73,27 @@ export default function AdminProductsPage() {
   const [catDescription, setCatDescription] = useState("");
   const [catImage, setCatImage] = useState("/images/category-dresses.jpg");
 
+  // Collection form states
+  const [colTitle, setColTitle] = useState("");
+  const [colSlug, setColSlug] = useState("");
+  const [isColSlugUserModified, setIsColSlugUserModified] = useState(false);
+  const [colSubtitle, setColSubtitle] = useState("");
+  const [colDescription, setColDescription] = useState("");
+  const [colBannerImage, setColBannerImage] = useState("/images/editorial-banner.jpg");
+  const [colIsFeatured, setColIsFeatured] = useState(true);
+
   const presetCategoryImages = [
     { label: "Dresses (ivory)", value: "/images/category-dresses.jpg" },
     { label: "Co-Ord Sets", value: "/images/satin-corset-blush-pink-front.png" },
     { label: "Suiting (sand)", value: "/images/product-suit-front.jpg" },
     { label: "Outerwear (black)", value: "/images/editorial-banner.jpg" },
+  ];
+
+  const presetCollectionBanners = [
+    { label: "Editorial Banner", value: "/images/editorial-banner.jpg" },
+    { label: "Hero Portrait", value: "/images/hero-portrait.jpg" },
+    { label: "Satin Corset Banner", value: "/images/satin-corset-blush-pink-front.png" },
+    { label: "Suiting Banner", value: "/images/product-suit-front.jpg" },
   ];
 
   useEffect(() => {
@@ -150,6 +161,64 @@ export default function AdminProductsPage() {
     }
   };
 
+  const openAddCollectionModal = () => {
+    setEditingCollection(null);
+    setColTitle("");
+    setColSlug("");
+    setIsColSlugUserModified(false);
+    setColSubtitle("");
+    setColDescription("");
+    setColBannerImage("/images/editorial-banner.jpg");
+    setColIsFeatured(true);
+    setIsCollectionModalOpen(true);
+  };
+
+  const openEditCollectionModal = (col: Collection) => {
+    setEditingCollection(col);
+    setColTitle(col.title);
+    setColSlug(col.slug || "");
+    setIsColSlugUserModified(true);
+    setColSubtitle(col.subtitle || "");
+    setColDescription(col.description || "");
+    setColBannerImage(col.bannerImage || "/images/editorial-banner.jpg");
+    setColIsFeatured(col.isFeatured ?? true);
+    setIsCollectionModalOpen(true);
+  };
+
+  const handleCollectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!colTitle.trim()) return;
+
+    const payload = {
+      title: colTitle.trim(),
+      slug: colSlug.trim() || colTitle.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      subtitle: colSubtitle.trim(),
+      description: colDescription.trim(),
+      bannerImage: colBannerImage.trim() || "/images/editorial-banner.jpg",
+      isFeatured: colIsFeatured,
+    };
+
+    try {
+      if (editingCollection) {
+        await updateCollection(editingCollection.id, payload);
+      } else {
+        await addCollection(payload);
+      }
+      setIsCollectionModalOpen(false);
+    } catch (err: any) {
+      alert("Failed to save collection: " + err.message);
+    }
+  };
+
+  const handleDeleteCollection = async (colId: string) => {
+    if (!confirm("Are you sure you want to delete this collection from Supabase?")) return;
+    try {
+      await deleteCollection(colId);
+    } catch (err: any) {
+      alert("Failed to delete collection: " + err.message);
+    }
+  };
+
   const openAddModal = () => {
     setEditingProduct(null);
     setName("");
@@ -158,7 +227,7 @@ export default function AdminProductsPage() {
     setPrice("");
     setSalePrice("");
     setSelectedCategoryId(categories[0]?.id || "");
-    setSelectedCollectionId(collectionsList[0]?.id || "");
+    setSelectedCollectionId(collections[0]?.id || "");
     setSubtitle("");
     setDescription("");
     setImageUrl("/images/product-dress-front.jpg");
@@ -182,7 +251,7 @@ export default function AdminProductsPage() {
     setPrice(String(prod.price));
     setSalePrice(prod.salePrice ? String(prod.salePrice) : "");
     setSelectedCategoryId(prod.categoryId || categories[0]?.id || "");
-    setSelectedCollectionId(prod.collectionId || collectionsList[0]?.id || "");
+    setSelectedCollectionId(prod.collectionId || collections[0]?.id || "");
     setSubtitle(prod.subtitle || "");
     setDescription(prod.description || "");
     setImageUrl(prod.imageUrl || (prod.images && prod.images[0]) || "/images/product-dress-front.jpg");
@@ -211,7 +280,7 @@ export default function AdminProductsPage() {
     if (!name || !price) return;
 
     const matchedCat = categories.find((c) => c.id === selectedCategoryId);
-    const matchedCol = collectionsList.find((c) => c.id === selectedCollectionId);
+    const matchedCol = collections.find((c) => c.id === selectedCollectionId);
 
     const imagesList = [imageUrl, galleryUrl1, galleryUrl2, galleryUrl3].filter((u) => Boolean(u && u.trim()));
 
@@ -290,17 +359,24 @@ export default function AdminProductsPage() {
           </h1>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={openAddCategoryModal}
-            className="bg-white text-black border border-neutral-200 text-xs font-label uppercase tracking-widest px-6 py-3.5 rounded-full flex items-center space-x-1.5 shadow-sm hover:border-black transition-colors"
+            className="bg-white text-black border border-neutral-200 text-xs font-label uppercase tracking-widest px-5 py-3 rounded-full flex items-center space-x-1.5 shadow-sm hover:border-black transition-colors"
           >
             <Tag className="w-4 h-4" />
             <span>ADD CATEGORY</span>
           </button>
           <button
+            onClick={openAddCollectionModal}
+            className="bg-white text-black border border-neutral-200 text-xs font-label uppercase tracking-widest px-5 py-3 rounded-full flex items-center space-x-1.5 shadow-sm hover:border-black transition-colors"
+          >
+            <Sliders className="w-4 h-4" />
+            <span>ADD COLLECTION</span>
+          </button>
+          <button
             onClick={openAddModal}
-            className="bg-black text-white text-xs font-label uppercase tracking-widest px-6 py-3.5 rounded-full flex items-center space-x-1.5 shadow-md hover:bg-neutral-800 transition-colors"
+            className="bg-black text-white text-xs font-label uppercase tracking-widest px-5 py-3 rounded-full flex items-center space-x-1.5 shadow-md hover:bg-neutral-800 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>ADD PRODUCT</span>
@@ -516,7 +592,7 @@ export default function AdminProductsPage() {
                     onChange={(e) => setSelectedCollectionId(e.target.value)}
                     className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                   >
-                    {collectionsList.map((col) => (
+                    {collections.map((col) => (
                       <option key={col.id} value={col.id}>
                         {col.title}
                       </option>
@@ -926,6 +1002,225 @@ export default function AdminProductsPage() {
                 className="w-full bg-[#1A1A1A] text-[#FAF8F5] text-xs uppercase tracking-[0.2em] py-4 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors"
               >
                 {editingCategory ? "SAVE CATEGORY CHANGES" : "CREATE CATEGORY INDEX"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Collections Management Table */}
+      <div className="space-y-4 pt-6 border-t border-neutral-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-label uppercase tracking-widest text-[#C8A46B] font-semibold">
+              SUPABASE DATABASE INDEX
+            </span>
+            <h2 className="text-xl font-serif font-bold uppercase tracking-wider text-neutral-900">
+              COLLECTIONS INDEX ({collections.length})
+            </h2>
+          </div>
+          <button
+            onClick={openAddCollectionModal}
+            className="bg-black text-white text-xs font-label uppercase tracking-widest px-5 py-2.5 rounded-full flex items-center space-x-1.5 shadow-sm hover:bg-neutral-800 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>ADD COLLECTION</span>
+          </button>
+        </div>
+
+        <div className="bg-white rounded-[24px] border border-neutral-200/80 shadow-luxury-xs overflow-hidden">
+          <table className="min-w-full divide-y divide-neutral-200 text-left text-xs font-label tracking-wider">
+            <thead className="bg-[#FAF8F5] uppercase text-[#706C66]">
+              <tr>
+                <th className="px-6 py-4">Banner</th>
+                <th className="px-6 py-4">Title</th>
+                <th className="px-6 py-4">Slug</th>
+                <th className="px-6 py-4">Subtitle</th>
+                <th className="px-6 py-4">Featured</th>
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200/60 font-sans text-neutral-800">
+              {collections.map((col) => (
+                <tr key={col.id} className="hover:bg-neutral-50/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="relative w-16 h-10 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200/50">
+                      <Image src={col.bannerImage || "/images/editorial-banner.jpg"} alt={col.title} fill className="object-cover" />
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="font-semibold text-black uppercase block">{col.title}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-neutral-500 font-mono text-[11px] bg-neutral-100 px-2.5 py-1 rounded-md">{col.slug}</span>
+                  </td>
+                  <td className="px-6 py-4 max-w-xs truncate text-neutral-500 text-xs">
+                    {col.subtitle || "—"}
+                  </td>
+                  <td className="px-6 py-4">
+                    {col.isFeatured ? (
+                      <span className="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase">
+                        FEATURED
+                      </span>
+                    ) : (
+                      <span className="text-neutral-400 text-[10px] uppercase font-semibold">STANDARD</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button
+                      onClick={() => openEditCollectionModal(col)}
+                      className="p-2 text-neutral-400 hover:text-black transition-colors"
+                      title="Edit Collection"
+                    >
+                      <Edit3 className="w-4 h-4 stroke-[1.5]" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCollection(col.id)}
+                      className="p-2 text-neutral-400 hover:text-red-600 transition-colors"
+                      title="Delete Collection"
+                    >
+                      <Trash2 className="w-4 h-4 stroke-[1.5]" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add / Edit Collection Modal */}
+      {isCollectionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/40 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar">
+            <button
+              onClick={() => setIsCollectionModalOpen(false)}
+              className="absolute top-6 right-6 text-neutral-400 hover:text-black"
+            >
+              <X className="w-6 h-6 stroke-[1.2]" />
+            </button>
+
+            <div>
+              <span className="text-[9px] font-label uppercase tracking-widest text-[#706C66] font-semibold">
+                {editingCollection ? "MODIFY EDITORIAL DROP" : "CREATE EDITORIAL DROP"}
+              </span>
+              <h3 className="text-xl font-serif font-bold uppercase tracking-wider text-[#1a1a1a]">
+                {editingCollection ? "EDIT COLLECTION" : "ADD NEW COLLECTION"}
+              </h3>
+            </div>
+
+            <form onSubmit={handleCollectionSubmit} className="space-y-4 text-xs font-label">
+              <div>
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                  Collection Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Resort '26 Evening Drop"
+                  value={colTitle}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setColTitle(val);
+                    if (!isColSlugUserModified) {
+                      setColSlug(val.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""));
+                    }
+                  }}
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                  Collection Slug (Auto-Generated / Editable)
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. resort-26-evening-drop"
+                  value={colSlug}
+                  onChange={(e) => {
+                    setColSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                    setIsColSlugUserModified(true);
+                  }}
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                  Subtitle
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Architectural Tailoring & Sculpted Evening Wear"
+                  value={colSubtitle}
+                  onChange={(e) => setColSubtitle(e.target.value)}
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Editorial story, silhouette narrative, and design direction..."
+                  value={colDescription}
+                  onChange={(e) => setColDescription(e.target.value)}
+                  rows={2}
+                  className="bg-[#FAF8F5] text-xs px-4 py-3.5 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">
+                  Banner Image URL
+                </label>
+
+                <div className="flex items-center space-x-3">
+                  <div className="relative w-16 h-10 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
+                    <Image src={colBannerImage || "/images/editorial-banner.jpg"} alt="Banner Preview" fill className="object-cover" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="https://images.unsplash.com/... or /images/..."
+                    value={colBannerImage}
+                    onChange={(e) => setColBannerImage(e.target.value)}
+                    className="bg-[#FAF8F5] text-xs px-3.5 py-3 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mt-1.5 bg-[#FAF8F5] p-2 rounded-2xl border border-neutral-200/80">
+                  {presetCollectionBanners.map((img) => (
+                    <button
+                      key={img.value}
+                      type="button"
+                      onClick={() => setColBannerImage(img.value)}
+                      className={`text-[10px] px-3 py-2 rounded-xl text-left border ${
+                        colBannerImage === img.value ? "bg-black text-white border-black" : "bg-white text-neutral-800 border-neutral-200"
+                      }`}
+                    >
+                      {img.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="flex items-center space-x-2 cursor-pointer bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200/80">
+                <input
+                  type="checkbox"
+                  checked={colIsFeatured}
+                  onChange={(e) => setColIsFeatured(e.target.checked)}
+                  className="accent-black rounded"
+                />
+                <span className="text-xs font-semibold text-neutral-900">FEATURED COLLECTION BANNER</span>
+              </label>
+
+              <button
+                type="submit"
+                className="w-full bg-[#1A1A1A] text-[#FAF8F5] text-xs uppercase tracking-[0.2em] py-4 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors"
+              >
+                {editingCollection ? "SAVE COLLECTION CHANGES" : "CREATE COLLECTION DROP"}
               </button>
             </form>
           </div>

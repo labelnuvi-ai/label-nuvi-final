@@ -409,6 +409,84 @@ export function useProducts() {
     await loadCatalog();
   };
 
+  const addCollection = async (colData: Partial<Collection>) => {
+    const supabase = createClient();
+    const id = colData.id || "col-" + Date.now();
+    const now = new Date().toISOString();
+
+    const dbRow = {
+      id,
+      title: colData.title,
+      slug: colData.slug || colData.title?.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "col-" + Date.now(),
+      subtitle: colData.subtitle || "",
+      description: colData.description || "",
+      banner_image: colData.bannerImage || "/images/editorial-banner.jpg",
+      is_featured: colData.isFeatured ?? true,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const { data, error } = await supabase
+      .from("collections")
+      .insert(dbRow)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating collection:", error);
+      throw error;
+    }
+
+    await loadCatalog();
+    return data;
+  };
+
+  const updateCollection = async (collectionId: string, colData: Partial<Collection>) => {
+    const supabase = createClient();
+    const now = new Date().toISOString();
+
+    const dbRow: any = {
+      updated_at: now,
+    };
+    if (colData.title !== undefined) dbRow.title = colData.title;
+    if (colData.slug !== undefined) dbRow.slug = colData.slug;
+    if (colData.subtitle !== undefined) dbRow.subtitle = colData.subtitle;
+    if (colData.description !== undefined) dbRow.description = colData.description;
+    if (colData.bannerImage !== undefined) dbRow.banner_image = colData.bannerImage;
+    if (colData.isFeatured !== undefined) dbRow.is_featured = colData.isFeatured;
+
+    const { data, error } = await supabase
+      .from("collections")
+      .update(dbRow)
+      .eq("id", collectionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating collection:", error);
+      throw error;
+    }
+
+    await loadCatalog();
+    return data;
+  };
+
+  const deleteCollection = async (collectionId: string) => {
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from("collections")
+      .delete()
+      .eq("id", collectionId);
+
+    if (error) {
+      console.error("Error deleting collection:", error);
+      throw error;
+    }
+
+    await loadCatalog();
+  };
+
   return {
     products,
     categories,
@@ -420,6 +498,9 @@ export function useProducts() {
     addCategory,
     updateCategory,
     deleteCategory,
+    addCollection,
+    updateCollection,
+    deleteCollection,
     refresh: loadCatalog,
   };
 }
