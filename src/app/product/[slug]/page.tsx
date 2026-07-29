@@ -38,7 +38,8 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   const product = products.find((p) => p.slug === slug);
 
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null);
-  const [selectedSize, setSelectedSize] = useState<ProductSize>("S");
+  const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
+  const [sizeError, setSizeError] = useState(false);
   const [activeAccordion, setActiveAccordion] = useState<string | null>("fabric");
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -72,7 +73,12 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   const relatedProducts = products.filter((p) => p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
+    if (!selectedSize) {
+      setSizeError(true);
+      return;
+    }
     if (selectedColor) {
+      setSizeError(false);
       addItem(product, selectedColor, selectedSize, 1);
       setAddedSuccess(true);
       setTimeout(() => setAddedSuccess(false), 2000);
@@ -248,7 +254,9 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
           {/* Size Selector */}
           <div className="space-y-3 border-t border-neutral-100 pt-6">
             <div className="flex justify-between items-center text-[10px] font-label uppercase tracking-widest font-semibold">
-              <span className="text-[#706C66]">Select Silhouette Size</span>
+              <span className={sizeError ? "text-red-600 font-bold" : "text-[#706C66]"}>
+                {sizeError ? "⚠️ Please select a silhouette size" : "Select Silhouette Size"}
+              </span>
               <button
                 onClick={openSizeGuide}
                 className="text-black underline flex items-center hover:text-[#C8A46B] transition-colors"
@@ -256,11 +264,14 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                 <Ruler className="w-3.5 h-3.5 mr-1" /> Size Guide
               </button>
             </div>
-            <div className="flex flex-wrap gap-2.5">
+            <div className={`flex flex-wrap gap-2.5 p-1 rounded-2xl transition-all ${sizeError ? "ring-2 ring-red-500/50 bg-red-50/30" : ""}`}>
               {product.sizes.map((sz) => (
                 <button
                   key={sz}
-                  onClick={() => setSelectedSize(sz)}
+                  onClick={() => {
+                    setSelectedSize(sz);
+                    setSizeError(false);
+                  }}
                   className={`w-12 h-12 rounded-xl text-xs font-bold font-label uppercase tracking-wider border flex items-center justify-center transition-all duration-300 ${
                     selectedSize === sz
                       ? "bg-black text-white border-black"

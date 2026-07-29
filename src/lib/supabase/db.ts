@@ -71,104 +71,119 @@ export async function removeFromWishlistDb(userId: string, productId: string) {
 
 // 3. Cart Operations
 export async function fetchCartDb(userId: string): Promise<CartItem[]> {
-  const { data: cartData, error: cartError } = await supabase
-    .from("cart_items")
-    .select("*")
-    .eq("user_id", userId);
+  try {
+    const { data: cartData, error: cartError } = await supabase
+      .from("cart_items")
+      .select("*")
+      .eq("user_id", userId);
 
-  if (cartError) {
-    console.error("Error fetching cart items:", cartError);
+    if (cartError) {
+      if (cartError.code !== "PGRST205") {
+        console.error("Error fetching cart items:", cartError);
+      }
+      return [];
+    }
+
+    if (!cartData || cartData.length === 0) return [];
+
+    // Fetch Supabase products
+    let dbProducts: Product[] = [];
+    try {
+      const { data: productsData } = await supabase.from("products").select(`
+        *,
+        categories (
+          name
+        ),
+        collections (
+          title
+        )
+      `);
+      if (productsData) {
+        dbProducts = productsData.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          subtitle: row.subtitle,
+          description: row.description,
+          price: Number(row.price),
+          salePrice: row.sale_price ? Number(row.sale_price) : undefined,
+          isNew: row.is_new,
+          isBestseller: row.is_bestseller,
+          isSoldOut: row.is_sold_out,
+          imageUrl: row.image_url || "/images/product-dress-front.jpg",
+          images: row.images && row.images.length > 0 ? row.images : [row.image_url || "/images/product-dress-front.jpg"],
+          colors: row.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
+          sizes: row.sizes || ["S", "M", "L"],
+          categoryId: row.category_id,
+          categoryName: row.categories?.name || "Dresses",
+          collectionId: row.collection_id || undefined,
+          collectionName: row.collections?.title || undefined,
+          rating: Number(row.rating || 5.0),
+          reviewsCount: Number(row.reviews_count || 0),
+          createdAt: row.created_at,
+          details: row.details || ["Dry clean only"],
+          fabricCare: row.fabric_care || ["Dry clean only"],
+        }));
+      }
+    } catch (pErr) {
+      console.error("Error fetching products during cart load:", pErr);
+    }
+
+    const cartItems: CartItem[] = [];
+    cartData.forEach((dbItem: any) => {
+      const product = dbProducts.find((p) => p.id === dbItem.product_id);
+      if (product) {
+        cartItems.push({
+          id: dbItem.id || `${dbItem.product_id}-${dbItem.size}`,
+          product,
+          selectedColor: { name: dbItem.color_name || "Standard", hex: dbItem.color_hex || "#FAF8F5" },
+          selectedSize: dbItem.size,
+          quantity: dbItem.quantity,
+        });
+      }
+    });
+
+    return cartItems;
+  } catch (err) {
+    console.error("Cart DB fetch exception:", err);
     return [];
   }
-
-  // Fetch Supabase products
-  let dbProducts: Product[] = [];
-  try {
-    const { data: productsData } = await supabase.from("products").select(`
-      *,
-      categories (
-        name
-      ),
-      collections (
-        title
-      )
-    `);
-    if (productsData) {
-      dbProducts = productsData.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        slug: row.slug,
-        subtitle: row.subtitle,
-        description: row.description,
-        price: Number(row.price),
-        salePrice: row.sale_price ? Number(row.sale_price) : undefined,
-        isNew: row.is_new,
-        isBestseller: row.is_bestseller,
-        isSoldOut: row.is_sold_out,
-        imageUrl: row.image_url || "/images/product-dress-front.jpg",
-        images: [row.image_url || "/images/product-dress-front.jpg"],
-        colors: row.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
-        sizes: row.sizes || ["S", "M"],
-        categoryId: row.category_id,
-        categoryName: row.categories?.name || "Dresses",
-        collectionId: row.collection_id || undefined,
-        collectionName: row.collections?.title || undefined,
-        rating: Number(row.rating || 5.0),
-        reviewsCount: Number(row.reviews_count || 0),
-        createdAt: row.created_at,
-        details: row.details || ["Dry clean only"],
-        fabricCare: row.fabric_care || ["Dry clean only"],
-      }));
-    }
-  } catch (pErr) {
-    console.error("Error fetching products during cart load:", pErr);
-  }
-
-  const allProducts = dbProducts;
-
-  const cartItems: CartItem[] = [];
-  (cartData || []).forEach((dbItem) => {
-    const product = allProducts.find((p) => p.id === dbItem.product_id);
-    if (product) {
-      cartItems.push({
-        id: dbItem.id,
-        product,
-        selectedColor: { name: dbItem.color_name, hex: dbItem.color_hex },
-        selectedSize: dbItem.size,
-        quantity: dbItem.quantity,
-      });
-    }
-  });
-
-  return cartItems;
 }
 
 export async function syncCartDb(userId: string, items: CartItem[]) {
-  // Simple strategy: wipe current cart items and re-insert state to match client
-  const { error: deleteError } = await supabase
-    .from("cart_items")
-    .delete()
-    .eq("user_id", userId);
+  try {
+    const { error: deleteError } = await supabase
+      .from("cart_items")
+      .delete()
+      .eq("user_id", userId);
 
-  if (deleteError) {
-    console.error("Error cleaning cart items for sync:", deleteError);
-    return;
-  }
+    if (deleteError) {
+      if (deleteError.code !== "PGRST205") {
+        console.error("Error cleaning cart items for sync:", deleteError);
+      }
+      return;
+    }
 
-  if (items.length === 0) return;
+    if (items.length === 0) return;
 
-  const dbRows = items.map((item) => ({
-    user_id: userId,
-    product_id: item.product.id,
-    color_name: item.selectedColor.name,
-    color_hex: item.selectedColor.hex,
-    size: item.selectedSize,
-    quantity: item.quantity,
-  }));
+    const dbRows = items.map((item) => ({
+      user_id: userId,
+      product_id: item.product.id,
+      color_name: item.selectedColor?.name || "Standard",
+      color_hex: item.selectedColor?.hex || "#FAF8F5",
+      size: item.selectedSize,
+      quantity: item.quantity,
+      updated_at: new Date().toISOString(),
+    }));
 
-  const { error: insertError } = await supabase.from("cart_items").insert(dbRows);
-  if (insertError) {
-    console.error("Error inserting cart items during sync:", insertError);
+    const { error: insertError } = await supabase.from("cart_items").insert(dbRows);
+    if (insertError) {
+      if (insertError.code !== "PGRST205") {
+        console.error("Error inserting cart items during sync:", insertError);
+      }
+    }
+  } catch (err) {
+    console.error("Cart DB sync exception:", err);
   }
 }
 

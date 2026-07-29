@@ -115,8 +115,35 @@ export const useCartStore = create<CartState>()(
 
       syncCart: async (userId) => {
         try {
+          const localItems = get().items;
           const dbItems = await fetchCartDb(userId);
-          set({ items: dbItems });
+
+          if (localItems.length > 0) {
+            const mergedMap = new Map<string, CartItem>();
+
+            // Add DB items
+            dbItems.forEach((item) => {
+              const key = `${item.product.id}-${item.selectedColor.name}-${item.selectedSize}`;
+              mergedMap.set(key, { ...item });
+            });
+
+            // Merge local guest items
+            localItems.forEach((localItem) => {
+              const key = `${localItem.product.id}-${localItem.selectedColor.name}-${localItem.selectedSize}`;
+              const existing = mergedMap.get(key);
+              if (existing) {
+                existing.quantity += localItem.quantity;
+              } else {
+                mergedMap.set(key, { ...localItem });
+              }
+            });
+
+            const mergedItems = Array.from(mergedMap.values());
+            set({ items: mergedItems });
+            await syncCartDb(userId, mergedItems);
+          } else {
+            set({ items: dbItems });
+          }
         } catch (err) {
           console.error("Failed to sync cart with Supabase database:", err);
         }
