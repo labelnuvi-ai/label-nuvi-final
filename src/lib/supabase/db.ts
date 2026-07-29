@@ -395,27 +395,61 @@ export async function fetchOrdersDb(userId?: string): Promise<Order[]> {
       console.warn("order_items query skipped (table may not exist yet):", itemErr);
     }
 
+    // Collect product_ids from orders or order_items to query products table
+    const productIdsSet = new Set<string>();
+    ordersData.forEach((o: any) => {
+      if (o.product_id) productIdsSet.add(o.product_id);
+    });
+    Object.values(itemsByOrderId)
+      .flat()
+      .forEach((i: any) => {
+        if (i.product_id) productIdsSet.add(i.product_id);
+      });
+
+    let productsMap: Record<string, any> = {};
+    if (productIdsSet.size > 0) {
+      try {
+        const { data: prodsData } = await supabase
+          .from("products")
+          .select("id, name, image_url")
+          .in("id", Array.from(productIdsSet));
+
+        if (prodsData) {
+          prodsData.forEach((p: any) => {
+            productsMap[p.id] = p;
+          });
+        }
+      } catch (prodErr) {
+        console.warn("products table join lookup skipped:", prodErr);
+      }
+    }
+
     // Map rows back to Order TypeScript interface
     return ordersData.map((row: any) => {
       const rawItems = itemsByOrderId[row.id] || [];
+      const rowProd = row.product_id ? productsMap[row.product_id] : null;
+
       const mappedItems =
         rawItems.length > 0
-          ? rawItems.map((item: any) => ({
-              id: item.id,
-              productId: item.product_id || "prod-default",
-              productName: item.product_name || "LABEL NUVI Silhouette",
-              productImage: item.product_image || "/images/product-dress-front.jpg",
-              color: item.color || "Standard",
-              size: item.size || "M",
-              unitPrice: Number(item.unit_price || item.price || 0),
-              quantity: Number(item.quantity || 1),
-            }))
+          ? rawItems.map((item: any) => {
+              const matchedProd = item.product_id ? productsMap[item.product_id] : null;
+              return {
+                id: item.id,
+                productId: item.product_id || "prod-default",
+                productName: item.product_name || matchedProd?.name || "LABEL NUVI Silhouette",
+                productImage: item.product_image || matchedProd?.image_url || rowProd?.image_url || "/images/product-dress-front.jpg",
+                color: item.color || "Standard",
+                size: item.size || "M",
+                unitPrice: Number(item.unit_price || item.price || 0),
+                quantity: Number(item.quantity || 1),
+              };
+            })
           : [
               {
                 id: `oi-${row.id}`,
-                productId: "prod-label-nuvi",
-                productName: "LABEL NUVI Haute Couture Silhouette",
-                productImage: "/images/product-dress-front.jpg",
+                productId: row.product_id || "prod-label-nuvi",
+                productName: row.product_name || rowProd?.name || "LABEL NUVI Haute Couture Silhouette",
+                productImage: row.product_image || row.image_url || rowProd?.image_url || "/images/product-dress-front.jpg",
                 color: "Standard",
                 size: "M",
                 unitPrice: Number(row.subtotal || row.total || 0),
