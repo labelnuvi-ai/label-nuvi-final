@@ -250,23 +250,36 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
           {/* Color Selector */}
           <div className="space-y-3 border-t border-neutral-100 pt-6">
-            <span className="text-[10px] font-label uppercase tracking-widest text-[#706C66] font-semibold block">
-              Color &bull; {currentSelectionColor?.name}
-            </span>
+            <div className="flex justify-between items-center text-[10px] font-label uppercase tracking-widest">
+              <span className="text-[#706C66] font-semibold">
+                Color &bull; <strong className="text-black">{currentSelectionColor?.name}</strong>
+              </span>
+              {currentSelectionColor?.stock !== undefined && (
+                <span className="text-neutral-400 font-mono text-[9px]">
+                  Stock: {currentSelectionColor.stock}
+                </span>
+              )}
+            </div>
             <div className="flex items-center space-x-3">
               {product.colors.map((color) => (
                 <button
                   key={color.name}
-                  onClick={() => setSelectedColor(color)}
-                  className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all ${
+                  onClick={() => {
+                    setSelectedColor(color);
+                    if (color.image) {
+                      const idx = (product.images || []).indexOf(color.image);
+                      if (idx !== -1) setActiveImageIndex(idx);
+                    }
+                  }}
+                  className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
                     currentSelectionColor?.name === color.name
-                      ? "border-black scale-110"
+                      ? "border-black scale-110 shadow-xs"
                       : "border-transparent hover:scale-105"
                   }`}
-                  title={color.name}
+                  title={`${color.name}${color.isDefault ? " (Default)" : ""}`}
                 >
                   <span
-                    className="w-5 h-5 rounded-full block border border-neutral-200/40"
+                    className="w-6 h-6 rounded-full block border border-neutral-200/60 shadow-inner"
                     style={{ backgroundColor: color.hex }}
                   />
                 </button>
@@ -274,7 +287,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             </div>
           </div>
 
-          {/* Size Selector */}
+          {/* Size Selector with Dynamic Stock Indicators */}
           <div className="space-y-3 border-t border-neutral-100 pt-6">
             <div className="flex justify-between items-center text-[10px] font-label uppercase tracking-widest font-semibold">
               <span className={sizeError ? "text-red-600 font-bold" : "text-[#706C66]"}>
@@ -287,23 +300,35 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                 <Ruler className="w-3.5 h-3.5 mr-1" /> Size Guide
               </button>
             </div>
+
             <div className={`flex flex-wrap gap-2.5 p-1 rounded-2xl transition-all ${sizeError ? "ring-2 ring-red-500/50 bg-red-50/30" : ""}`}>
-              {product.sizes.map((sz) => (
-                <button
-                  key={sz}
-                  onClick={() => {
-                    setSelectedSize(sz);
-                    setSizeError(false);
-                  }}
-                  className={`w-12 h-12 rounded-xl text-xs font-bold font-label uppercase tracking-wider border flex items-center justify-center transition-all duration-300 ${
-                    selectedSize === sz
-                      ? "bg-black text-white border-black"
-                      : "bg-[#FAF8F5] text-neutral-800 border-neutral-200 hover:border-black"
-                  }`}
-                >
-                  {sz}
-                </button>
-              ))}
+              {(product.sizeVariants && product.sizeVariants.length > 0
+                ? product.sizeVariants.map((sv) => sv.size)
+                : product.sizes || ["S", "M", "L"]
+              ).map((sz) => {
+                const svItem = product.sizeVariants?.find((sv) => sv.size === sz);
+                const stockVal = svItem ? svItem.stock : 10;
+
+                return (
+                  <button
+                    key={sz}
+                    onClick={() => {
+                      setSelectedSize(sz);
+                      setSizeError(false);
+                    }}
+                    className={`px-4 py-3 rounded-xl text-xs font-bold font-label uppercase tracking-wider border flex flex-col items-center justify-center transition-all duration-300 ${
+                      selectedSize === sz
+                        ? "bg-black text-white border-black shadow-md scale-105"
+                        : "bg-[#FAF8F5] text-neutral-800 border-neutral-200 hover:border-black"
+                    }`}
+                  >
+                    <span>{sz}</span>
+                    <span className={`text-[8px] font-mono font-normal mt-0.5 ${selectedSize === sz ? "text-neutral-300" : "text-neutral-400"}`}>
+                      {stockVal > 0 ? `Stock: ${stockVal}` : "Sold Out"}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -311,7 +336,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={handleAddToCart}
-              className="flex-1 bg-black text-white text-xs font-label uppercase tracking-[0.25em] py-4 px-6 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors flex items-center justify-center space-x-2"
+              className="flex-1 bg-black text-white text-xs font-label uppercase tracking-[0.25em] py-4 px-6 font-semibold rounded-full hover:bg-[#C8A46B] transition-colors flex items-center justify-center space-x-2 shadow-luxury-xs"
             >
               <ShoppingBag className="w-4 h-4 stroke-[1.2]" />
               <span>{addedSuccess ? "ADDED TO BAG" : "ADD TO SHOPPING BAG"}</span>
@@ -330,21 +355,85 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             </button>
           </div>
 
-          {/* Editorial Trust accordions */}
-          <div className="border-t border-neutral-100 pt-6 space-y-4 text-xs">
+          {/* Showcase Videos (Catwalk, Showcase & Product Videos) */}
+          {product.videos && (product.videos.productVideo || product.videos.catwalkVideo || product.videos.showcaseVideo) && (
+            <div className="border-t border-neutral-100 pt-6 space-y-3 font-label">
+              <span className="text-[10px] text-[#C8A46B] uppercase tracking-widest font-semibold block">
+                SHOWCASE RUNWAY VIDEOS
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {product.videos.productVideo && (
+                  <a
+                    href={product.videos.productVideo}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200 text-center hover:border-black transition-colors block"
+                  >
+                    <span className="text-[10px] uppercase font-bold block text-neutral-900">Product Video</span>
+                    <span className="text-[9px] text-neutral-400 font-mono">Watch HD ▶</span>
+                  </a>
+                )}
+                {product.videos.catwalkVideo && (
+                  <a
+                    href={product.videos.catwalkVideo}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200 text-center hover:border-black transition-colors block"
+                  >
+                    <span className="text-[10px] uppercase font-bold block text-neutral-900">Catwalk Runway</span>
+                    <span className="text-[9px] text-neutral-400 font-mono">Watch HD ▶</span>
+                  </a>
+                )}
+                {product.videos.showcaseVideo && (
+                  <a
+                    href={product.videos.showcaseVideo}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200 text-center hover:border-black transition-colors block"
+                  >
+                    <span className="text-[10px] uppercase font-bold block text-neutral-900">360° Showcase</span>
+                    <span className="text-[9px] text-neutral-400 font-mono">Watch HD ▶</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic Custom Attributes Grid */}
+          {product.attributes && product.attributes.length > 0 && (
+            <div className="border-t border-neutral-100 pt-6 space-y-3 font-label">
+              <span className="text-[10px] text-neutral-400 uppercase tracking-widest font-semibold block">
+                SILHOUETTE SPECIFICATIONS
+              </span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {product.attributes.map((attr, aIdx) => (
+                  <div key={aIdx} className="bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200/60">
+                    <span className="text-[9px] text-neutral-400 uppercase block font-bold">{attr.key}</span>
+                    <span className="font-bold text-neutral-900">{attr.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Editorial Trust Accordions */}
+          <div className="border-t border-neutral-100 pt-6 space-y-4 text-xs font-label">
             {/* Fabrication */}
             <div className="border-b border-neutral-100 pb-4">
               <button
                 onClick={() => setActiveAccordion(activeAccordion === "fabric" ? null : "fabric")}
                 className="w-full flex justify-between items-center text-left font-bold uppercase tracking-wider text-neutral-900"
               >
-                <span>Fabrication & Details</span>
+                <span>Fabrication & Detailed Finish</span>
                 <span>{activeAccordion === "fabric" ? "—" : "+"}</span>
               </button>
               {activeAccordion === "fabric" && (
-                <div className="mt-3 text-neutral-600 space-y-2 pl-2 list-disc font-sans font-light leading-relaxed">
+                <div className="mt-3 text-neutral-600 space-y-2 font-sans font-light leading-relaxed">
                   {product.details.map((detail, dIdx) => (
-                    <p key={dIdx}>&bull; {detail}</p>
+                    <div key={dIdx} className="flex items-center space-x-2">
+                      <span className="text-[#C8A46B] font-bold">✓</span>
+                      <span>{detail}</span>
+                    </div>
                   ))}
                 </div>
               )}
