@@ -13,7 +13,7 @@ export function useProducts() {
     try {
       const supabase = createClient();
       
-      // Fetch Products directly from products table joined with categories & collections
+      // Fetch Products joined with categories, collections, product_images & product_variants
       const { data: prodData, error: prodError } = await supabase
         .from("products")
         .select(`
@@ -23,6 +23,14 @@ export function useProducts() {
           ),
           collections (
             title
+          ),
+          product_images (
+            image_url
+          ),
+          product_variants (
+            size,
+            color_name,
+            color_hex
           )
         `)
         .order("created_at", { ascending: false });
@@ -38,12 +46,32 @@ export function useProducts() {
         .select("*");
 
       if (!prodError && prodData) {
-        console.log("SUPABASE ROW", prodData[0]);
-
         const dbMapped = prodData.map((row: any) => {
           const mainImageUrl = row.image_url || "/images/product-dress-front.jpg";
-          console.log("RAW DB:", row.image_url);
-          console.log("MAIN:", mainImageUrl);
+          
+          // Build images array combining main image_url and product_images rows
+          let galleryList: string[] = [];
+          if (Array.isArray(row.product_images) && row.product_images.length > 0) {
+            galleryList = row.product_images.map((pi: any) => pi.image_url).filter(Boolean);
+          }
+          const allImages = [mainImageUrl, ...galleryList.filter((img) => img !== mainImageUrl)];
+
+          // Extract colors and sizes from product_variants
+          let colorList: { name: string; hex: string }[] = [];
+          let sizeList: string[] = [];
+
+          if (Array.isArray(row.product_variants) && row.product_variants.length > 0) {
+            const colorMap = new Map<string, string>();
+            const sizeSet = new Set<string>();
+
+            row.product_variants.forEach((v: any) => {
+              if (v.color_name) colorMap.set(v.color_name, v.color_hex || "#FAF8F5");
+              if (v.size) sizeSet.add(v.size);
+            });
+
+            colorMap.forEach((hex, name) => colorList.push({ name, hex }));
+            sizeList = Array.from(sizeSet);
+          }
 
           return {
             id: row.id,
@@ -52,14 +80,15 @@ export function useProducts() {
             subtitle: row.subtitle || "Premium Drop Silhouette",
             description: row.description || "Crafted from hand-selected luxurious materials.",
             price: Number(row.price),
+            salePrice: row.sale_price ? Number(row.sale_price) : undefined,
             isNew: row.is_new ?? true,
             isBestseller: row.is_bestseller ?? false,
             isSoldOut: row.is_sold_out ?? false,
             isActive: row.is_active ?? true,
             imageUrl: mainImageUrl,
-            images: Array.isArray(row.images) && row.images.length > 0 ? row.images : [mainImageUrl],
-            colors: Array.isArray(row.colors) ? row.colors : [{ name: "Ivory", hex: "#FAF8F5" }],
-            sizes: Array.isArray(row.sizes) ? row.sizes : ["S", "M", "L"],
+            images: allImages.length > 0 ? allImages : [mainImageUrl],
+            colors: colorList.length > 0 ? colorList : [{ name: "Ivory", hex: "#FAF8F5" }],
+            sizes: sizeList.length > 0 ? (sizeList as any) : ["S", "M", "L"],
             categoryId: row.category_id,
             categoryName: row.categories?.name || "Dresses",
             collectionId: row.collection_id || undefined,
@@ -67,8 +96,8 @@ export function useProducts() {
             rating: Number(row.rating || 5.0),
             reviewsCount: Number(row.reviews_count || 0),
             createdAt: row.created_at,
-            details: Array.isArray(row.details) ? row.details : ["Dry clean only"],
-            fabricCare: Array.isArray(row.fabric_care) ? row.fabric_care : ["Dry clean only"],
+            details: ["Hand finished seam construction", "Dry clean only"],
+            fabricCare: ["Dry clean only", "Cool iron reverse"],
           };
         });
 
@@ -118,97 +147,22 @@ export function useProducts() {
           ],
         };
 
-        const azureEclipseProduct: Product = {
-          id: "prod-azure-eclipse-001",
-          name: "Azure Eclipse Co-Ord Set",
-          slug: "azure-eclipse-co-ord-set",
-          subtitle: "Architectural Satin Evening Co-Ord",
-          description:
-            "A striking two-piece satin co-ord crafted for modern evening dressing. The structured cropped blazer features sculpted shoulders and a deep architectural neckline, paired with a high-waisted mini skirt finished with a subtle side slit. Designed to create a confident silhouette while maintaining effortless elegance.\n\nCut from premium high-shine satin with a fluid drape, Azure Eclipse transitions seamlessly from cocktail evenings to luxury resort occasions. Every detail is engineered to embody contemporary femininity with refined tailoring.",
-          price: 6999,
-          salePrice: undefined,
-          isNew: true,
-          isBestseller: true,
-          isSoldOut: false,
-          imageUrl: "/images/azure-eclipse-coord.jpg",
-          images: ["/images/azure-eclipse-coord.jpg"],
-          colors: [
-            { name: "Royal Azure", hex: "#0047AB" },
-            { name: "Atelier Gold", hex: "#C8A46B" },
-          ],
-          sizes: ["S", "M", "L"],
-          categoryId: "cat-dresses",
-          categoryName: "Dresses",
-          collectionId: "col-resort-26",
-          collectionName: "Resort '26",
-          rating: 5.0,
-          reviewsCount: 12,
-          createdAt: new Date().toISOString(),
-          details: [
-            "Two-piece coordinated set",
-            "Cropped blazer with structured shoulders",
-            "Deep plunge silhouette",
-            "High-rise mini skirt",
-            "Side slit detail",
-            "Regular fit",
-            "True to size",
-          ],
-          fabricCare: [
-            "Premium Satin Blend",
-            "Soft Inner Lining",
-            "Dry Clean Only",
-            "Steam on Low Heat",
-            "Do Not Bleach",
-            "Store on Hanger",
-          ],
-        };
+        const hasBlushInDb = dbMapped.some((p) => p.slug === blushPinkCorsetProduct.slug);
+        const finalProducts = hasBlushInDb ? dbMapped : [blushPinkCorsetProduct, ...dbMapped];
 
-        const hasBlush = dbMapped.some((p: any) => p.slug === "satin-corset-co-ord-set-blush-pink");
-        const hasAzure = dbMapped.some((p: any) => p.slug === "azure-eclipse-co-ord-set");
-
-        const extraProducts: Product[] = [];
-        if (!hasBlush) extraProducts.push(blushPinkCorsetProduct);
-        if (!hasAzure) extraProducts.push(azureEclipseProduct);
-
-        const finalCatalog = [...extraProducts, ...dbMapped];
-
-        setProducts(finalCatalog);
-
-        console.log("FINAL PRODUCTS", finalCatalog.map((r: any) => ({
-          name: r.name,
-          image: r.imageUrl
-        })));
+        setProducts(finalProducts);
+      } else if (prodError) {
+        console.error("Supabase products fetch error:", prodError);
       }
 
       if (!catError && catData) {
-        setCategories(
-          catData.map((row) => ({
-            id: row.id,
-            name: row.name,
-            slug: row.slug,
-            description: row.description || "",
-            imageUrl: row.image_url || "/images/category-dresses.jpg",
-            itemCount: row.item_count || 0,
-          }))
-        );
+        setCategories(catData);
       }
-
       if (!colError && colData) {
-        setCollections(
-          colData.map((row) => ({
-            id: row.id,
-            title: row.title,
-            slug: row.slug,
-            subtitle: row.subtitle || "",
-            description: row.description || "",
-            bannerImage: row.banner_image || "/images/editorial-banner.jpg",
-            isFeatured: row.is_featured,
-            productsCount: row.products_count || 0,
-          }))
-        );
+        setCollections(colData);
       }
-    } catch (err) {
-      console.error("Error loading catalog:", err);
+    } catch (err: any) {
+      console.error("loadCatalog error:", err);
     } finally {
       setLoading(false);
     }
@@ -220,21 +174,10 @@ export function useProducts() {
 
   const addProduct = async (productData: Partial<Product>) => {
     const supabase = createClient();
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    console.log("==============");
-    console.log("SESSION:", session);
-    console.log("USER:", session?.user);
-    console.log("ROLE:", session?.user?.role);
-    console.log("==============");
-
     const id = productData.id || crypto.randomUUID();
     const now = new Date().toISOString();
 
-    // Insert payload targeting products table schema
+    // Insert payload targeting valid columns ONLY in products table
     const dbRow: any = {
       id,
       category_id: productData.categoryId || null,
@@ -246,11 +189,6 @@ export function useProducts() {
       price: productData.price,
       sale_price: productData.salePrice || null,
       image_url: productData.imageUrl || "/images/product-dress-front.jpg",
-      images: productData.images || [productData.imageUrl || "/images/product-dress-front.jpg"],
-      colors: productData.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
-      sizes: productData.sizes || ["S", "M", "L"],
-      details: productData.details || ["Dry clean only"],
-      fabric_care: productData.fabricCare || ["Dry clean only"],
       rating: productData.rating ?? 5.0,
       reviews_count: productData.reviewsCount ?? 0,
       is_new: productData.isNew ?? true,
@@ -261,25 +199,50 @@ export function useProducts() {
       updated_at: now,
     };
 
-    console.log("========== PRODUCT INSERT ==========");
-    console.log(dbRow);
-
     const { data, error } = await supabase
       .from("products")
       .insert(dbRow)
       .select()
       .single();
 
-    console.log("INSERT RESULT:", data);
-    console.log("INSERT ERROR:", error);
-    console.log("===================================");
-
     if (error) {
-      alert(JSON.stringify(error, null, 2));
-      console.error(error);
+      console.error("INSERT ERROR:", error);
+      alert("Database error: " + error.message);
       throw error;
     }
-    
+
+    // Persist additional gallery images into product_images table
+    const extraImages = (productData.images || []).filter((img) => img && img !== dbRow.image_url);
+    if (extraImages.length > 0) {
+      const imageRows = extraImages.map((img) => ({
+        product_id: id,
+        image_url: img,
+      }));
+      const { error: imgErr } = await supabase.from("product_images").insert(imageRows);
+      if (imgErr) console.error("Error inserting product_images:", imgErr);
+    }
+
+    // Persist sizes and colors into product_variants table
+    const sizes = productData.sizes || ["S", "M", "L"];
+    const colors = productData.colors || [{ name: "Ivory", hex: "#FAF8F5" }];
+    const variantRows: any[] = [];
+
+    sizes.forEach((sz) => {
+      colors.forEach((c) => {
+        variantRows.push({
+          product_id: id,
+          size: sz,
+          color_name: c.name,
+          color_hex: c.hex,
+        });
+      });
+    });
+
+    if (variantRows.length > 0) {
+      const { error: varErr } = await supabase.from("product_variants").insert(variantRows);
+      if (varErr) console.error("Error inserting product_variants:", varErr);
+    }
+
     await loadCatalog();
     return data;
   };
@@ -288,7 +251,7 @@ export function useProducts() {
     const supabase = createClient();
     const now = new Date().toISOString();
 
-    // Payload containing valid products table columns
+    // Payload containing valid columns ONLY in products table
     const dbRow: any = {
       updated_at: now,
     };
@@ -305,11 +268,6 @@ export function useProducts() {
     if (productData.categoryId !== undefined) dbRow.category_id = productData.categoryId;
     if (productData.collectionId !== undefined) dbRow.collection_id = productData.collectionId;
     if (productData.imageUrl !== undefined) dbRow.image_url = productData.imageUrl;
-    if (productData.images !== undefined) dbRow.images = productData.images;
-    if (productData.colors !== undefined) dbRow.colors = productData.colors;
-    if (productData.sizes !== undefined) dbRow.sizes = productData.sizes;
-    if (productData.details !== undefined) dbRow.details = productData.details;
-    if (productData.fabricCare !== undefined) dbRow.fabric_care = productData.fabricCare;
 
     const { data, error } = await supabase
       .from("products")
@@ -320,7 +278,47 @@ export function useProducts() {
 
     if (error) {
       console.error("Error updating product:", error);
+      alert("Error updating product: " + error.message);
       throw error;
+    }
+
+    // Synchronize product_images table if images array is provided
+    if (productData.images !== undefined) {
+      const mainImg = productData.imageUrl || dbRow.image_url;
+      const extraImages = productData.images.filter((img) => img && img !== mainImg);
+
+      await supabase.from("product_images").delete().eq("product_id", productId);
+
+      if (extraImages.length > 0) {
+        const imageRows = extraImages.map((img) => ({
+          product_id: productId,
+          image_url: img,
+        }));
+        await supabase.from("product_images").insert(imageRows);
+      }
+    }
+
+    // Synchronize product_variants table if sizes or colors are provided
+    if (productData.sizes !== undefined || productData.colors !== undefined) {
+      const sizes = productData.sizes || ["S", "M", "L"];
+      const colors = productData.colors || [{ name: "Ivory", hex: "#FAF8F5" }];
+      const variantRows: any[] = [];
+
+      sizes.forEach((sz) => {
+        colors.forEach((c) => {
+          variantRows.push({
+            product_id: productId,
+            size: sz,
+            color_name: c.name,
+            color_hex: c.hex,
+          });
+        });
+      });
+
+      await supabase.from("product_variants").delete().eq("product_id", productId);
+      if (variantRows.length > 0) {
+        await supabase.from("product_variants").insert(variantRows);
+      }
     }
 
     await loadCatalog();
