@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sliders, Plus, Trash2, Edit3, ArrowLeft, X, Tag, Upload, RefreshCw } from "lucide-react";
-import { Product, Category, Collection, ProductColor, ProductSizeStock, ProductCustomAttribute } from "@/types";
+import { Product, Category, Collection } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { useProducts } from "@/hooks/useProducts";
 
@@ -49,56 +49,15 @@ export default function AdminProductsPage() {
   const [selectedCollectionId, setSelectedCollectionId] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [description, setDescription] = useState("");
-  
-  // Media System v2 States
   const [imageUrl, setImageUrl] = useState("/images/product-dress-front.jpg");
-  const [galleryImages, setGalleryImages] = useState<string[]>([
-    "/images/product-dress-front.jpg",
-    "/images/product-dress-back.jpg",
-  ]);
-
-  // Product Videos
-  const [productVideo, setProductVideo] = useState("");
-  const [catwalkVideo, setCatwalkVideo] = useState("");
-  const [showcaseVideo, setShowcaseVideo] = useState("");
-
-  // Dynamic Colours Manager
-  const [colors, setColors] = useState<ProductColor[]>([
-    { name: "Royal Azure", hex: "#0F52BA", isDefault: true, stock: 15 },
-    { name: "Ivory", hex: "#FAF8F5", isDefault: false, stock: 10 },
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([""]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(["S", "M", "L"]);
+  const [colors, setColors] = useState<{ name: string; hex: string }[]>([
+    { name: "Ivory", hex: "#FAF8F5" },
+    { name: "Blush Pink", hex: "#E88DA5" },
   ]);
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#C8A46B");
-
-  // Dynamic Sizes & Stock Manager
-  const [sizeVariants, setSizeVariants] = useState<ProductSizeStock[]>([
-    { size: "XS", stock: 12 },
-    { size: "S", stock: 5 },
-    { size: "M", stock: 8 },
-    { size: "L", stock: 10 },
-  ]);
-  const [newSizeName, setNewSizeName] = useState("");
-  const [newSizeStock, setNewSizeStock] = useState("10");
-
-  // Dynamic Custom Attributes Manager (Key/Value)
-  const [attributes, setAttributes] = useState<ProductCustomAttribute[]>([
-    { key: "Fabric", value: "Silk Satin" },
-    { key: "Care", value: "Dry Clean Only" },
-    { key: "Occasion", value: "Evening / Party" },
-    { key: "Neck", value: "Halter" },
-    { key: "Sleeve", value: "Sleeveless" },
-  ]);
-  const [newAttrKey, setNewAttrKey] = useState("");
-  const [newAttrValue, setNewAttrValue] = useState("");
-
-  // Dynamic Product Details Bullet Points
-  const [detailsBullets, setDetailsBullets] = useState<string[]>([
-    "Premium Satin Fabrication",
-    "Hand Finished Seams",
-    "Hidden Zipper Closure",
-    "Tailored Couture Fit",
-  ]);
-  const [newBulletText, setNewBulletText] = useState("");
 
   const [isNew, setIsNew] = useState(true);
   const [isBestseller, setIsBestseller] = useState(false);
@@ -141,9 +100,6 @@ export default function AdminProductsPage() {
       });
 
       setImageUrl(secureUrl);
-      if (!galleryImages.includes(secureUrl)) {
-        setGalleryImages((prev) => [secureUrl, ...prev]);
-      }
       setUploadError(null);
     } catch (err: any) {
       console.error("Cloudinary upload failed:", err);
@@ -153,9 +109,9 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleMultiGalleryCloudinaryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleGalleryCloudinaryUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -163,28 +119,34 @@ export default function AdminProductsPage() {
 
     try {
       const { uploadToCloudinary } = await import("@/lib/cloudinary/upload");
-      const uploadedUrls: string[] = [];
-      const fileList = Array.from(files);
+      const secureUrl = await uploadToCloudinary(file, {
+        onProgress: (pct) => setUploadProgress(pct),
+      });
 
-      for (let i = 0; i < fileList.length; i++) {
-        const file = fileList[i];
-        const secureUrl = await uploadToCloudinary(file, {
-          onProgress: (pct) => setUploadProgress(Math.round(((i + pct / 100) / fileList.length) * 100)),
-        });
-        uploadedUrls.push(secureUrl);
-      }
-
-      setGalleryImages((prev) => [...prev, ...uploadedUrls]);
-      if (!imageUrl && uploadedUrls.length > 0) {
-        setImageUrl(uploadedUrls[0]);
-      }
+      const updated = [...galleryUrls];
+      updated[index] = secureUrl;
+      setGalleryUrls(updated);
       setUploadError(null);
     } catch (err: any) {
-      console.error("Multi upload failed:", err);
-      setUploadError(err.message || "Failed to upload gallery images.");
+      console.error("Cloudinary upload failed:", err);
+      setUploadError(err.message || "Failed to upload gallery image.");
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const addGalleryField = () => {
+    setGalleryUrls((prev) => [...prev, ""]);
+  };
+
+  const removeGalleryField = (index: number) => {
+    setGalleryUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateGalleryUrl = (index: number, value: string) => {
+    const updated = [...galleryUrls];
+    updated[index] = value;
+    setGalleryUrls(updated);
   };
 
   const presetCategoryImages = [
@@ -336,37 +298,9 @@ export default function AdminProductsPage() {
     setSubtitle("");
     setDescription("");
     setImageUrl("/images/product-dress-front.jpg");
-    setGalleryImages([
-      "/images/product-dress-front.jpg",
-      "/images/product-dress-back.jpg",
-    ]);
-    setProductVideo("");
-    setCatwalkVideo("");
-    setShowcaseVideo("");
-    setColors([
-      { name: "Royal Azure", hex: "#0F52BA", isDefault: true, stock: 15 },
-      { name: "Ivory", hex: "#FAF8F5", isDefault: false, stock: 10 },
-    ]);
-    setSizeVariants([
-      { size: "XS", stock: 12 },
-      { size: "S", stock: 5 },
-      { size: "M", stock: 8 },
-      { size: "L", stock: 10 },
-    ]);
-    setAttributes([
-      { key: "Fabric", value: "Silk Satin" },
-      { key: "Care", value: "Dry Clean Only" },
-      { key: "Occasion", value: "Evening / Party" },
-      { key: "Neck", value: "Halter" },
-      { key: "Sleeve", value: "Sleeveless" },
-    ]);
-    setDetailsBullets([
-      "Premium Satin Fabrication",
-      "Hand Finished Seams",
-      "Hidden Zipper Closure",
-      "Tailored Couture Fit",
-      "Luxury Finish",
-    ]);
+    setGalleryUrls([""]);
+    setSelectedSizes(["S", "M", "L"]);
+    setColors([{ name: "Ivory", hex: "#FAF8F5" }, { name: "Blush Pink", hex: "#E88DA5" }]);
     setIsNew(true);
     setIsBestseller(false);
     setIsSoldOut(false);
@@ -386,23 +320,28 @@ export default function AdminProductsPage() {
     setSubtitle(prod.subtitle || "");
     setDescription(prod.description || "");
     setImageUrl(prod.imageUrl || (prod.images && prod.images[0]) || "/images/product-dress-front.jpg");
-    setGalleryImages(prod.images && prod.images.length > 0 ? prod.images : [prod.imageUrl || "/images/product-dress-front.jpg"]);
-    setProductVideo(prod.videos?.productVideo || "");
-    setCatwalkVideo(prod.videos?.catwalkVideo || "");
-    setShowcaseVideo(prod.videos?.showcaseVideo || "");
-    setColors(prod.colors && prod.colors.length > 0 ? prod.colors : [{ name: "Ivory", hex: "#FAF8F5", isDefault: true }]);
-    setSizeVariants(
-      prod.sizeVariants && prod.sizeVariants.length > 0
-        ? prod.sizeVariants
-        : (prod.sizes || ["S", "M", "L"]).map((s: any) => (typeof s === "string" ? { size: s, stock: 10 } : s))
-    );
-    setAttributes(prod.attributes || []);
-    setDetailsBullets(prod.details || ["Hand finished silk satin"]);
+    
+    // Fill galleryUrls with any gallery images excluding main cover if duplicate or all gallery images
+    const existingGallery = prod.images && prod.images.length > 0
+      ? (prod.images[0] === prod.imageUrl ? prod.images.slice(1) : prod.images)
+      : [];
+    setGalleryUrls(existingGallery.length > 0 ? existingGallery : [""]);
+    
+    setSelectedSizes(prod.sizes || ["S", "M", "L"]);
+    setColors(prod.colors && prod.colors.length > 0 ? prod.colors : [{ name: "Ivory", hex: "#FAF8F5" }]);
     setIsNew(prod.isNew ?? true);
     setIsBestseller(prod.isBestseller ?? false);
     setIsSoldOut(prod.isSoldOut ?? false);
     setIsActive(prod.isActive ?? true);
     setIsProductModalOpen(true);
+  };
+
+  const handleSizeToggle = (size: string) => {
+    if (selectedSizes.includes(size)) {
+      setSelectedSizes(selectedSizes.filter((s) => s !== size));
+    } else {
+      setSelectedSizes([...selectedSizes, size]);
+    }
   };
 
   const handleProductSubmit = async (e: React.FormEvent) => {
@@ -412,8 +351,8 @@ export default function AdminProductsPage() {
     const matchedCat = categories.find((c) => c.id === selectedCategoryId);
     const matchedCol = collections.find((c) => c.id === selectedCollectionId);
 
-    const imagesList = galleryImages.length > 0 ? galleryImages : [imageUrl || "/images/product-dress-front.jpg"];
-    const mainImg = imageUrl || imagesList[0] || "/images/product-dress-front.jpg";
+    const validGallery = galleryUrls.map((u) => u.trim()).filter(Boolean);
+    const imagesList = [imageUrl, ...validGallery].filter(Boolean);
 
     const payload: Partial<Product> = {
       name,
@@ -426,23 +365,16 @@ export default function AdminProductsPage() {
       categoryName: matchedCat ? matchedCat.name : "Dresses",
       collectionId: selectedCollectionId,
       collectionName: matchedCol ? matchedCol.title : undefined,
-      imageUrl: mainImg,
-      images: imagesList,
-      videos: {
-        productVideo: productVideo.trim() || undefined,
-        catwalkVideo: catwalkVideo.trim() || undefined,
-        showcaseVideo: showcaseVideo.trim() || undefined,
-      },
-      colors: colors.length > 0 ? colors : [{ name: "Ivory", hex: "#FAF8F5", isDefault: true }],
-      sizes: sizeVariants.map((sv) => sv.size),
-      sizeVariants: sizeVariants,
-      attributes: attributes,
-      details: detailsBullets.length > 0 ? detailsBullets : ["Hand finished silk satin"],
-      fabricCare: ["Dry clean only", "Cool iron reverse"],
+      imageUrl: imageUrl || imagesList[0] || "/images/product-dress-front.jpg",
+      images: imagesList.length > 0 ? imagesList : [imageUrl || "/images/product-dress-front.jpg"],
+      colors: colors.length > 0 ? colors : [{ name: "Ivory", hex: "#FAF8F5" }],
+      sizes: selectedSizes.length > 0 ? (selectedSizes as any) : ["S", "M", "L"],
       isNew,
       isBestseller,
       isSoldOut,
       isActive,
+      details: editingProduct?.details || ["Dry clean only", "Made in India"],
+      fabricCare: editingProduct?.fabricCare || ["Dry clean only", "Cool iron reverse"],
     };
 
     try {
@@ -767,73 +699,49 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              {/* ==================================================================== */}
-              {/* PRODUCT MEDIA MANAGER V2 (DYNAMIC GALLERY & COVER) */}
-              {/* ==================================================================== */}
-              <div className="space-y-4 pt-4 border-t border-neutral-200/80 font-label">
+              {/* Main Cover Image Uploader */}
+              <div className="space-y-2 pt-2 border-t border-neutral-100 font-label">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[9px] font-label uppercase tracking-widest text-[#C8A46B] font-semibold block">
-                      SHOPIFY-STYLE MEDIA MANAGER
-                    </span>
-                    <label className="text-xs font-serif font-bold uppercase tracking-wider text-neutral-900">
-                      MAIN COVER & UNLIMITED GALLERY ({galleryImages.length} IMAGES)
-                    </label>
-                  </div>
-                  
-                  {/* Multi-Select Upload Button */}
-                  <label className="relative cursor-pointer bg-black text-white text-[10px] font-label uppercase tracking-widest px-4 py-2.5 rounded-xl flex items-center space-x-1.5 hover:bg-[#C8A46B] transition-colors shadow-xs">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>+ ADD IMAGES</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      disabled={isUploading}
-                      onChange={handleMultiGalleryCloudinaryUpload}
-                      className="sr-only"
-                    />
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">
+                    Main Cover Image (Cloudinary Direct Uploader)
                   </label>
+                  {imageUrl && (
+                    <span className="text-[9px] uppercase font-mono tracking-widest text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      {imageUrl.includes("cloudinary.com") ? "Cloudinary Secure CDN" : "Media Selected"}
+                    </span>
+                  )}
                 </div>
 
-                {isUploading && (
-                  <div className="space-y-1 bg-amber-50 p-3 rounded-2xl border border-amber-200">
-                    <div className="flex justify-between text-[10px] uppercase font-bold text-amber-900">
-                      <span>Cloudinary Uploading Media...</span>
-                      <span>{uploadProgress}%</span>
-                    </div>
-                    <div className="w-full bg-amber-200 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-black h-full transition-all duration-200"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Cover Preview & Main Selector */}
-                <div className="bg-[#FAF8F5] p-3.5 rounded-2xl border border-neutral-200/80 flex items-center space-x-4">
-                  <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-300 shrink-0 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200/80">
+                  {/* Instant Image Preview */}
+                  <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0 shadow-xs self-center sm:self-auto">
                     <Image
                       src={imageUrl || "/images/product-dress-front.jpg"}
-                      alt="Main Cover"
+                      alt="Main Cover Preview"
                       fill
                       className="object-cover"
                     />
                   </div>
-                  <div className="flex-1 space-y-1 text-xs">
+
+                  {/* Upload Controls */}
+                  <div className="flex-1 space-y-2 flex flex-col justify-center min-w-0">
                     <div className="flex items-center space-x-2">
-                      <span className="bg-black text-white text-[9px] uppercase font-bold px-2.5 py-0.5 rounded-full tracking-wider">
-                        MAIN COVER IMAGE
-                      </span>
-                      <span className="text-[10px] text-neutral-400 font-mono">
-                        {imageUrl.includes("cloudinary") ? "Cloudinary CDN" : "Static Media"}
-                      </span>
-                    </div>
-                    <p className="text-[10px] font-mono text-neutral-500 truncate max-w-xs">{imageUrl}</p>
-                    <div className="flex items-center space-x-2 pt-1">
-                      <label className="cursor-pointer text-[10px] uppercase font-semibold text-black hover:text-[#C8A46B] underline">
-                        Replace Cover
+                      <label
+                        className={`relative cursor-pointer bg-black text-white text-xs font-label uppercase tracking-widest px-5 py-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-sm ${
+                          isUploading ? "opacity-60 pointer-events-none cursor-not-allowed" : "hover:bg-neutral-800"
+                        }`}
+                      >
+                        {isUploading ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+                            <span>UPLOADING ({uploadProgress}%)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 stroke-[1.5]" />
+                            <span>{imageUrl ? "CHANGE IMAGE" : "UPLOAD IMAGE"}</span>
+                          </>
+                        )}
                         <input
                           type="file"
                           accept="image/*"
@@ -842,429 +750,179 @@ export default function AdminProductsPage() {
                           className="sr-only"
                         />
                       </label>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Unlimited Gallery Thumbnails Grid */}
-                <div className="space-y-2">
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold block">
-                    Product Gallery ({galleryImages.length} images uploaded &bull; Drag to reorder)
-                  </span>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {galleryImages.map((img, idx) => {
-                      const isCover = img === imageUrl;
-                      return (
-                        <div
-                          key={idx}
-                          className={`relative rounded-2xl overflow-hidden border p-2 bg-white flex flex-col justify-between space-y-2 shadow-xs transition-all ${
-                            isCover ? "border-black ring-2 ring-black/10" : "border-neutral-200 hover:border-neutral-400"
-                          }`}
+                      {imageUrl && !isUploading && (
+                        <button
+                          type="button"
+                          onClick={() => setImageUrl("")}
+                          className="text-[10px] uppercase font-semibold text-neutral-400 hover:text-red-600 px-2 py-1 transition-colors"
                         >
-                          <div className="relative aspect-[4/5] w-full rounded-xl overflow-hidden bg-neutral-100">
-                            <Image src={img} alt={`Gallery image ${idx + 1}`} fill className="object-cover" />
-                            {isCover && (
-                              <span className="absolute top-1.5 left-1.5 bg-black text-white text-[8px] uppercase font-bold px-2 py-0.5 rounded-full">
-                                COVER
-                              </span>
-                            )}
-                          </div>
+                          Clear
+                        </button>
+                      )}
+                    </div>
 
-                          <div className="flex items-center justify-between text-[10px] pt-1">
-                            <button
-                              type="button"
-                              onClick={() => setImageUrl(img)}
-                              className={`font-semibold uppercase transition-colors ${
-                                isCover ? "text-emerald-700 font-bold" : "text-neutral-500 hover:text-black"
-                              }`}
-                            >
-                              {isCover ? "✓ Cover" : "Make Cover"}
-                            </button>
+                    {/* Real-time Progress Bar */}
+                    {isUploading && (
+                      <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-black h-full transition-all duration-200"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    )}
 
-                            <div className="flex items-center space-x-1">
-                              {idx > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = [...galleryImages];
-                                    const temp = updated[idx];
-                                    updated[idx] = updated[idx - 1];
-                                    updated[idx - 1] = temp;
-                                    setGalleryImages(updated);
-                                  }}
-                                  className="p-1 text-neutral-400 hover:text-black font-bold"
-                                  title="Move Left"
-                                >
-                                  ←
-                                </button>
-                              )}
-                              {idx < galleryImages.length - 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = [...galleryImages];
-                                    const temp = updated[idx];
-                                    updated[idx] = updated[idx + 1];
-                                    updated[idx + 1] = temp;
-                                    setGalleryImages(updated);
-                                  }}
-                                  className="p-1 text-neutral-400 hover:text-black font-bold"
-                                  title="Move Right"
-                                >
-                                  →
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updated = galleryImages.filter((_, i) => i !== idx);
-                                  setGalleryImages(updated);
-                                  if (isCover && updated.length > 0) setImageUrl(updated[0]);
-                                }}
-                                className="p-1 text-neutral-400 hover:text-red-600"
-                                title="Delete Image"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {/* Error Message */}
+                    {uploadError && (
+                      <div className="text-[10px] text-red-600 font-sans font-medium flex items-center justify-between bg-red-50 p-2 rounded-xl border border-red-200">
+                        <span>{uploadError}</span>
+                      </div>
+                    )}
+
+                    {!isUploading && !uploadError && imageUrl && (
+                      <p className="text-[10px] font-mono text-neutral-400 truncate max-w-xs">
+                        {imageUrl}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* ==================================================================== */}
-              {/* PRODUCT VIDEOS SHOWCASE (CATWALK, SHOWCASE, PRODUCT VIDEO) */}
-              {/* ==================================================================== */}
-              <div className="space-y-3 pt-4 border-t border-neutral-200/80 font-label">
-                <span className="text-[9px] font-label uppercase tracking-widest text-[#C8A46B] font-semibold block">
-                  SHOWCASE MEDIA
-                </span>
-                <label className="text-xs font-serif font-bold uppercase tracking-wider text-neutral-900 block">
-                  PRODUCT VIDEOS (CATWALK, SHOWCASE & COUTURE)
-                </label>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1 font-semibold">
-                      Product Video URL
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Cloudinary MP4 or Video URL"
-                      value={productVideo}
-                      onChange={(e) => setProductVideo(e.target.value)}
-                      className="bg-[#FAF8F5] text-xs px-3.5 py-3 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1 font-semibold">
-                      Catwalk Runway Video
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Runway Video URL"
-                      value={catwalkVideo}
-                      onChange={(e) => setCatwalkVideo(e.target.value)}
-                      className="bg-[#FAF8F5] text-xs px-3.5 py-3 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1 font-semibold">
-                      360° Showcase Video
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="360° Showcase Video URL"
-                      value={showcaseVideo}
-                      onChange={(e) => setShowcaseVideo(e.target.value)}
-                      className="bg-[#FAF8F5] text-xs px-3.5 py-3 w-full rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* ==================================================================== */}
-              {/* DYNAMIC COLOUR MANAGER */}
-              {/* ==================================================================== */}
-              <div className="space-y-3 pt-4 border-t border-neutral-200/80 font-label">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-serif font-bold uppercase tracking-wider text-neutral-900">
-                    DYNAMIC COLOUR VARIANTS ({colors.length} COLOURS)
+              {/* Dynamic Gallery Images Section */}
+              <div className="space-y-3 pt-2 border-t border-neutral-100 font-label">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">
+                    Gallery Images (Dynamic List)
                   </label>
-                  <span className="text-[10px] text-[#C8A46B] uppercase tracking-wider font-semibold">
-                    Separate Variant Images Supported
+                  <span className="text-[9px] uppercase font-mono tracking-widest text-neutral-400">
+                    {galleryUrls.filter((u) => u.trim()).length} Images
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {colors.map((c, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3 rounded-2xl border bg-white flex items-center justify-between space-x-3 shadow-xs ${
-                        c.isDefault ? "border-black ring-1 ring-black/10" : "border-neutral-200"
+                <div className="space-y-3">
+                  {galleryUrls.map((gUrl, idx) => (
+                    <div key={idx} className="flex items-center space-x-2">
+                      <div className="relative w-12 h-14 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0 shadow-xs">
+                        <Image
+                          src={gUrl || imageUrl || "/images/product-dress-front.jpg"}
+                          alt={`Gallery ${idx + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder={`Gallery Image URL ${idx + 1}`}
+                        value={gUrl}
+                        onChange={(e) => updateGalleryUrl(idx, e.target.value)}
+                        className="bg-[#FAF8F5] text-xs px-3.5 py-3 flex-1 rounded-2xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
+                      />
+                      <label
+                        className="cursor-pointer bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs px-3 py-3 rounded-2xl border border-neutral-200 flex items-center justify-center shrink-0 transition-colors"
+                        title="Upload Image to Cloudinary"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploading}
+                          onChange={(e) => handleGalleryCloudinaryUpload(idx, e)}
+                          className="sr-only"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryField(idx)}
+                        className="p-2 text-neutral-400 hover:text-red-600 transition-colors shrink-0"
+                        title="Remove Image Field"
+                      >
+                        <Trash2 className="w-4 h-4 stroke-[1.5]" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addGalleryField}
+                  className="w-full bg-[#FAF8F5] hover:bg-neutral-100 text-neutral-800 border border-dashed border-neutral-300 hover:border-black text-xs font-semibold py-3 rounded-2xl flex items-center justify-center space-x-2 transition-all uppercase tracking-wider"
+                >
+                  <Plus className="w-4 h-4 stroke-[1.5]" />
+                  <span>+ ADD ANOTHER IMAGE</span>
+                </button>
+              </div>
+
+              {/* Sizes Selection */}
+              <div>
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block mb-1.5 font-semibold">
+                  Available Sizes
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {["XXS", "XS", "S", "M", "L", "XL", "XXL"].map((sz) => (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => handleSizeToggle(sz)}
+                      className={`w-10 h-10 rounded-xl text-xs flex items-center justify-center font-bold border transition-colors ${
+                        selectedSizes.includes(sz)
+                          ? "bg-black text-white border-black"
+                          : "bg-[#FAF8F5] text-neutral-800 border-neutral-200 hover:border-black"
                       }`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <span
-                          className="w-6 h-6 rounded-full border border-neutral-300 shadow-xs shrink-0"
-                          style={{ backgroundColor: c.hex }}
-                        />
-                        <div className="text-xs">
-                          <p className="font-bold text-neutral-900">{c.name}</p>
-                          <p className="text-[10px] text-neutral-400 font-mono uppercase">{c.hex} &bull; Stock: {c.stock ?? 10}</p>
-                        </div>
-                      </div>
+                      {sz}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                      <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setColors(colors.map((col, i) => ({ ...col, isDefault: i === idx })));
-                          }}
-                          className={`text-[9px] uppercase font-bold px-2 py-1 rounded-lg transition-colors ${
-                            c.isDefault ? "bg-black text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                          }`}
-                        >
-                          {c.isDefault ? "DEFAULT" : "Make Default"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setColors(colors.filter((_, i) => i !== idx))}
-                          className="text-neutral-400 hover:text-red-600 p-1"
-                          title="Delete Colour"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+              {/* Dynamic Colours List */}
+              <div className="space-y-2.5 pt-2 border-t border-neutral-100">
+                <label className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">
+                  Available Colours (Dynamic List)
+                </label>
+
+                <div className="flex flex-wrap gap-2">
+                  {colors.map((c, idx) => (
+                    <div key={idx} className="flex items-center space-x-2 bg-[#FAF8F5] border border-neutral-200 px-3 py-1.5 rounded-xl">
+                      <span className="w-4 h-4 rounded-full border border-neutral-300 shrink-0" style={{ backgroundColor: c.hex }} />
+                      <span className="text-xs font-semibold text-neutral-800">{c.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setColors(colors.filter((_, i) => i !== idx))}
+                        className="text-neutral-400 hover:text-red-600 font-bold ml-1"
+                        title="Remove Colour"
+                      >
+                        ✕
+                      </button>
                     </div>
                   ))}
                 </div>
 
-                {/* Add New Color Control */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200">
+                <div className="flex space-x-2 pt-1">
                   <input
                     type="text"
-                    placeholder="Colour Name (e.g. Royal Azure)"
+                    placeholder="Colour Name (e.g. Blush Pink)"
                     value={newColorName}
                     onChange={(e) => setNewColorName(e.target.value)}
-                    className="bg-white text-xs px-3.5 py-2.5 flex-1 rounded-xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                  />
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="color"
-                      value={newColorHex}
-                      onChange={(e) => setNewColorHex(e.target.value)}
-                      className="w-10 h-10 rounded-xl border border-neutral-200 p-0.5 cursor-pointer bg-white"
-                      title="Choose Hex Swatch"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!newColorName.trim()) return;
-                        setColors([
-                          ...colors,
-                          {
-                            name: newColorName.trim(),
-                            hex: newColorHex,
-                            isDefault: colors.length === 0,
-                            stock: 10,
-                          },
-                        ]);
-                        setNewColorName("");
-                        setNewColorHex("#C8A46B");
-                      }}
-                      className="bg-black text-white text-xs px-4 py-2.5 rounded-xl font-semibold uppercase tracking-wider hover:bg-[#C8A46B] transition-colors shrink-0"
-                    >
-                      + Add Colour
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* ==================================================================== */}
-              {/* DYNAMIC SIZES & INVENTORY MANAGER */}
-              {/* ==================================================================== */}
-              <div className="space-y-3 pt-4 border-t border-neutral-200/80 font-label">
-                <label className="text-xs font-serif font-bold uppercase tracking-wider text-neutral-900 block">
-                  DYNAMIC SIZES & INVENTORY ({sizeVariants.length} SIZES)
-                </label>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {sizeVariants.map((sv, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 bg-white rounded-2xl border border-neutral-200 flex flex-col justify-between space-y-2 shadow-xs"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-neutral-900 font-mono uppercase bg-neutral-100 px-2.5 py-1 rounded-lg">
-                          {sv.size}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setSizeVariants(sizeVariants.filter((_, i) => i !== idx))}
-                          className="text-neutral-400 hover:text-red-600"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center space-x-1.5 text-xs">
-                        <span className="text-[10px] text-neutral-400 uppercase font-semibold">Stock:</span>
-                        <input
-                          type="number"
-                          value={sv.stock}
-                          onChange={(e) => {
-                            const val = Number(e.target.value || 0);
-                            const updated = [...sizeVariants];
-                            updated[idx].stock = val;
-                            setSizeVariants(updated);
-                          }}
-                          className="w-16 bg-[#FAF8F5] text-xs font-bold font-mono px-2 py-1 rounded-lg border border-neutral-200 text-center"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add Custom Size Control */}
-                <div className="flex space-x-2 pt-1 bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200">
-                  <input
-                    type="text"
-                    placeholder="Size Name (e.g. XS, M, Custom)"
-                    value={newSizeName}
-                    onChange={(e) => setNewSizeName(e.target.value)}
-                    className="bg-white text-xs px-3.5 py-2.5 flex-1 rounded-xl border border-neutral-200 focus:outline-none focus:border-black font-sans uppercase font-bold"
+                    className="bg-[#FAF8F5] text-xs px-3.5 py-2.5 flex-1 rounded-xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
                   />
                   <input
-                    type="number"
-                    placeholder="Stock"
-                    value={newSizeStock}
-                    onChange={(e) => setNewSizeStock(e.target.value)}
-                    className="w-20 bg-white text-xs px-3 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:border-black font-mono font-bold text-center"
+                    type="color"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    className="w-10 h-10 rounded-xl border border-neutral-200 p-0.5 cursor-pointer bg-white"
+                    title="Choose Hex Swatch"
                   />
                   <button
                     type="button"
                     onClick={() => {
-                      if (!newSizeName.trim()) return;
-                      const sizeUpper = newSizeName.trim().toUpperCase();
-                      if (sizeVariants.some((s) => s.size === sizeUpper)) return;
-                      setSizeVariants([
-                        ...sizeVariants,
-                        { size: sizeUpper, stock: Number(newSizeStock || 10) },
-                      ]);
-                      setNewSizeName("");
-                      setNewSizeStock("10");
+                      if (!newColorName.trim()) return;
+                      setColors([...colors, { name: newColorName.trim(), hex: newColorHex }]);
+                      setNewColorName("");
                     }}
-                    className="bg-black text-white text-xs px-4 py-2.5 rounded-xl font-semibold uppercase tracking-wider hover:bg-[#C8A46B] transition-colors shrink-0"
+                    className="bg-black text-white text-xs px-4 py-2.5 rounded-xl font-semibold uppercase tracking-wider hover:bg-neutral-800 transition-colors"
                   >
-                    + Add Size
-                  </button>
-                </div>
-              </div>
-
-              {/* ==================================================================== */}
-              {/* DYNAMIC CUSTOM ATTRIBUTES MANAGER (FABRIC, CARE, OCCASION, ETC) */}
-              {/* ==================================================================== */}
-              <div className="space-y-3 pt-4 border-t border-neutral-200/80 font-label">
-                <label className="text-xs font-serif font-bold uppercase tracking-wider text-neutral-900 block">
-                  CUSTOM ATTRIBUTES ({attributes.length} ATTRIBUTES)
-                </label>
-
-                <div className="space-y-2">
-                  {attributes.map((attr, idx) => (
-                    <div key={idx} className="flex items-center space-x-3 bg-white p-3 rounded-2xl border border-neutral-200 text-xs">
-                      <span className="font-bold text-neutral-900 w-28 truncate uppercase font-label">{attr.key}:</span>
-                      <span className="text-neutral-600 flex-1 font-sans">{attr.value}</span>
-                      <button
-                        type="button"
-                        onClick={() => setAttributes(attributes.filter((_, i) => i !== idx))}
-                        className="text-neutral-400 hover:text-red-600"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add New Attribute Row */}
-                <div className="flex flex-col sm:flex-row gap-2 pt-1 bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200">
-                  <input
-                    type="text"
-                    placeholder="Attribute Key (e.g. Fabric, Care)"
-                    value={newAttrKey}
-                    onChange={(e) => setNewAttrKey(e.target.value)}
-                    className="bg-white text-xs px-3.5 py-2.5 w-full sm:w-36 rounded-xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Value (e.g. Silk Satin, Dry Clean Only)"
-                    value={newAttrValue}
-                    onChange={(e) => setNewAttrValue(e.target.value)}
-                    className="bg-white text-xs px-3.5 py-2.5 flex-1 rounded-xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!newAttrKey.trim() || !newAttrValue.trim()) return;
-                      setAttributes([...attributes, { key: newAttrKey.trim(), value: newAttrValue.trim() }]);
-                      setNewAttrKey("");
-                      setNewAttrValue("");
-                    }}
-                    className="bg-black text-white text-xs px-4 py-2.5 rounded-xl font-semibold uppercase tracking-wider hover:bg-[#C8A46B] transition-colors shrink-0"
-                  >
-                    + Add Attribute
-                  </button>
-                </div>
-              </div>
-
-              {/* ==================================================================== */}
-              {/* DYNAMIC PRODUCT DETAILS BULLET POINTS */}
-              {/* ==================================================================== */}
-              <div className="space-y-3 pt-4 border-t border-neutral-200/80 font-label">
-                <label className="text-xs font-serif font-bold uppercase tracking-wider text-neutral-900 block">
-                  PRODUCT DETAILS BULLET POINTS ({detailsBullets.length} BULLETS)
-                </label>
-
-                <div className="space-y-2">
-                  {detailsBullets.map((bullet, idx) => (
-                    <div key={idx} className="flex items-center space-x-3 bg-white p-3 rounded-2xl border border-neutral-200 text-xs">
-                      <span className="text-[#C8A46B] font-bold">✓</span>
-                      <span className="text-neutral-700 flex-1 font-sans">{bullet}</span>
-                      <button
-                        type="button"
-                        onClick={() => setDetailsBullets(detailsBullets.filter((_, i) => i !== idx))}
-                        className="text-neutral-400 hover:text-red-600"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex space-x-2 pt-1 bg-[#FAF8F5] p-3 rounded-2xl border border-neutral-200">
-                  <input
-                    type="text"
-                    placeholder="New Detail Bullet Point (e.g. Hidden Zipper Closure)"
-                    value={newBulletText}
-                    onChange={(e) => setNewBulletText(e.target.value)}
-                    className="bg-white text-xs px-3.5 py-2.5 flex-1 rounded-xl border border-neutral-200 focus:outline-none focus:border-black font-sans"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!newBulletText.trim()) return;
-                      setDetailsBullets([...detailsBullets, newBulletText.trim()]);
-                      setNewBulletText("");
-                    }}
-                    className="bg-black text-white text-xs px-4 py-2.5 rounded-xl font-semibold uppercase tracking-wider hover:bg-[#C8A46B] transition-colors shrink-0"
-                  >
-                    + Add Bullet
+                    Add Color
                   </button>
                 </div>
               </div>

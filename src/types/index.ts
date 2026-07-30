@@ -1,30 +1,9 @@
-export type ProductSize = string;
-
-export interface ProductSizeStock {
-  size: string;
-  stock: number;
-}
+export type ProductSize = "XXS" | "XS" | "S" | "M" | "L" | "XL" | "XXL";
 
 export interface ProductColor {
-  id?: string;
   name: string;
   hex: string;
-  isDefault?: boolean;
   image?: string;
-  images?: string[];
-  stock?: number;
-  sizes?: ProductSizeStock[];
-}
-
-export interface ProductCustomAttribute {
-  key: string;
-  value: string;
-}
-
-export interface ProductVideos {
-  productVideo?: string;
-  catwalkVideo?: string;
-  showcaseVideo?: string;
 }
 
 export interface ProductVariant {
@@ -63,11 +42,8 @@ export interface Product {
   isActive?: boolean;
   imageUrl: string;
   images: string[];
-  videos?: ProductVideos;
   colors: ProductColor[];
   sizes: ProductSize[];
-  sizeVariants?: ProductSizeStock[];
-  attributes?: ProductCustomAttribute[];
   categoryId: string;
   categoryName: string;
   collectionId?: string;

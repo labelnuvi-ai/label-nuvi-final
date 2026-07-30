@@ -58,13 +58,8 @@ export function useProducts() {
             isActive: row.is_active ?? true,
             imageUrl: mainImageUrl,
             images: Array.isArray(row.images) && row.images.length > 0 ? row.images : [mainImageUrl],
-            videos: row.videos || {},
-            colors: Array.isArray(row.colors) ? row.colors : [{ name: "Ivory", hex: "#FAF8F5", isDefault: true }],
+            colors: Array.isArray(row.colors) ? row.colors : [{ name: "Ivory", hex: "#FAF8F5" }],
             sizes: Array.isArray(row.sizes) ? row.sizes : ["S", "M", "L"],
-            sizeVariants: Array.isArray(row.size_variants)
-              ? row.size_variants
-              : (Array.isArray(row.sizes) ? row.sizes.map((s: any) => typeof s === 'string' ? { size: s, stock: 10 } : s) : [{ size: "S", stock: 10 }, { size: "M", stock: 8 }, { size: "L", stock: 5 }]),
-            attributes: Array.isArray(row.attributes) ? row.attributes : [],
             categoryId: row.category_id,
             categoryName: row.categories?.name || "Dresses",
             collectionId: row.collection_id || undefined,
@@ -72,7 +67,7 @@ export function useProducts() {
             rating: Number(row.rating || 5.0),
             reviewsCount: Number(row.reviews_count || 0),
             createdAt: row.created_at,
-            details: Array.isArray(row.details) ? row.details : ["Hand finished silk satin", "Hidden side zip closure"],
+            details: Array.isArray(row.details) ? row.details : ["Dry clean only"],
             fabricCare: Array.isArray(row.fabric_care) ? row.fabric_care : ["Dry clean only"],
           };
         });
@@ -239,7 +234,7 @@ export function useProducts() {
     const id = productData.id || crypto.randomUUID();
     const now = new Date().toISOString();
 
-    // Insert payload targeting products table schema (including JSONB & Array columns)
+    // Insert payload targeting products table schema
     const dbRow: any = {
       id,
       category_id: productData.categoryId || null,
@@ -252,9 +247,9 @@ export function useProducts() {
       sale_price: productData.salePrice || null,
       image_url: productData.imageUrl || "/images/product-dress-front.jpg",
       images: productData.images || [productData.imageUrl || "/images/product-dress-front.jpg"],
-      colors: productData.colors || [{ name: "Ivory", hex: "#FAF8F5", isDefault: true }],
+      colors: productData.colors || [{ name: "Ivory", hex: "#FAF8F5" }],
       sizes: productData.sizes || ["S", "M", "L"],
-      details: productData.details || ["Hand finished silk satin", "Hidden side zip closure"],
+      details: productData.details || ["Dry clean only"],
       fabric_care: productData.fabricCare || ["Dry clean only"],
       rating: productData.rating ?? 5.0,
       reviews_count: productData.reviewsCount ?? 0,
@@ -265,9 +260,6 @@ export function useProducts() {
       created_at: now,
       updated_at: now,
     };
-
-    if (productData.videos) dbRow.videos = productData.videos;
-    if (productData.attributes) dbRow.attributes = productData.attributes;
 
     console.log("========== PRODUCT INSERT ==========");
     console.log(dbRow);
@@ -318,8 +310,6 @@ export function useProducts() {
     if (productData.sizes !== undefined) dbRow.sizes = productData.sizes;
     if (productData.details !== undefined) dbRow.details = productData.details;
     if (productData.fabricCare !== undefined) dbRow.fabric_care = productData.fabricCare;
-    if (productData.videos !== undefined) dbRow.videos = productData.videos;
-    if (productData.attributes !== undefined) dbRow.attributes = productData.attributes;
 
     const { data, error } = await supabase
       .from("products")
