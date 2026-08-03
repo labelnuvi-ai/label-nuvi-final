@@ -101,56 +101,7 @@ export function useProducts() {
           };
         });
 
-        const blushPinkCorsetProduct: Product = {
-          id: "prod-blush-pink-corset-001",
-          name: "Satin Corset Co-Ord Set – Blush Pink",
-          slug: "satin-corset-co-ord-set-blush-pink",
-          subtitle: "Luminous Satin Evening Co-Ord",
-          description:
-            "The Satin Corset Co-Ord Set – Blush Pink is designed for elevated evening dressing with a modern couture silhouette. Crafted from glossy satin, the structured corset crop top features elegant panel construction and dramatic off-shoulder puff sleeves that create a sculptural statement. The matching high-waisted ultra-wide palazzo trousers flow effortlessly, balancing structure with fluid movement. Designed for cocktail evenings, luxury vacations, celebrations, and fashion-forward occasions, this ensemble combines contemporary femininity with timeless sophistication.",
-          price: 4999,
-          salePrice: undefined,
-          isNew: true,
-          isBestseller: true,
-          isSoldOut: false,
-          imageUrl: "/images/satin-corset-blush-pink-front.png",
-          images: [
-            "/images/satin-corset-blush-pink-front.png",
-            "/images/satin-corset-blush-pink-back.jpg",
-          ],
-          colors: [{ name: "Blush Pink", hex: "#E88DA5" }],
-          sizes: ["S", "M", "L"],
-          categoryId: "cat-coord-sets",
-          categoryName: "Co-Ord Sets",
-          collectionId: "col-new-arrivals",
-          collectionName: "New Arrivals",
-          rating: 5.0,
-          reviewsCount: 0,
-          createdAt: new Date().toISOString(),
-          details: [
-            "Premium glossy satin fabrication",
-            "Structured corset bodice",
-            "Off-shoulder puff sleeves",
-            "High-waisted silhouette",
-            "Ultra-wide palazzo trousers",
-            "Lightweight luxurious drape",
-            "Hidden side zip closure",
-            "Fully lined",
-            "Designed in India",
-          ],
-          fabricCare: [
-            "Premium Satin Blend",
-            "Dry Clean Only",
-            "Steam Before Wear",
-            "Do Not Bleach",
-            "Cool Iron Inside Out",
-          ],
-        };
-
-        const hasBlushInDb = dbMapped.some((p) => p.slug === blushPinkCorsetProduct.slug);
-        const finalProducts = hasBlushInDb ? dbMapped : [blushPinkCorsetProduct, ...dbMapped];
-
-        setProducts(finalProducts);
+        setProducts(dbMapped);
       } else if (prodError) {
         console.error("Supabase products fetch error:", prodError);
       }
