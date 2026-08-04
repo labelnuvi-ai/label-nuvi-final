@@ -59,11 +59,12 @@ export function Header() {
     setIsMobileNavOpen(false);
   }, [pathname]);
 
-  const collections = [
-    { name: "New Arrivals", href: "/collections/atelier-drop-26" },
-    { name: "Couture Gowns", href: "/categories/couture-dresses" },
-    { name: "Tailored Suiting", href: "/categories/tailored-suiting" },
-    { name: "Cashmere Outerwear", href: "/categories/atelier-outerwear" },
+  const navLinks = [
+    { name: "Features", href: "#features" },
+    { name: "Hiring Panel", href: "#hiring-panel" },
+    { name: "Career Journey", href: "#career-journey" },
+    { name: "Pricing", href: "#pricing" },
+    { name: "Resources", href: "#resources" },
   ];
 
   return (
@@ -93,25 +94,18 @@ export function Header() {
               <Menu className="w-5 h-5 stroke-[1]" />
             </button>
 
-            <nav className="hidden lg:flex items-center space-x-12 text-[13px] font-label font-bold tracking-[0.22em] uppercase text-[#1A1A1A]">
-              {collections.map((link) => (
+            <nav className="hidden lg:flex items-center space-x-8 text-[12px] font-label font-bold tracking-[0.18em] uppercase text-[#1A1A1A]">
+              {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
                   className={`hover:text-[#C8A46B] transition-colors relative py-1 ${
-                    pathname === link.href ? "text-[#1A1A1A] font-extrabold" : "text-[#1A1A1A]/70"
+                    pathname === link.href ? "text-[#1A1A1A] font-extrabold" : "text-[#1A1A1A]/80"
                   }`}
                 >
                   {link.name}
-                  {pathname === link.href && (
-                    <motion.div
-                      layoutId="navUnderline"
-                      className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#1A1A1A]"
-                    />
-                  )}
                 </Link>
               ))}
-              <Link href="/shop" className="text-[#1A1A1A]/70 hover:text-[#C8A46B] transition-colors py-1">Catalog</Link>
             </nav>
           </div>
 
@@ -206,26 +200,11 @@ export function Header() {
 
                 {/* Navigation Links list */}
                 <nav className="flex flex-col space-y-6 text-lg text-neutral-800 tracking-wide font-medium">
-                  <Link href="/shop" onClick={() => setIsMobileNavOpen(false)} className="hover:text-black">
-                    Shop All
-                  </Link>
-                  <Link href="/collections/atelier-drop-26" onClick={() => setIsMobileNavOpen(false)} className="hover:text-black">
-                    New Arrivals
-                  </Link>
-                  <Link href="/categories/couture-dresses" onClick={() => setIsMobileNavOpen(false)} className="hover:text-black">
-                    Dresses
-                  </Link>
-                  <Link href="/categories/sculpt-contour" onClick={() => setIsMobileNavOpen(false)} className="hover:text-black">
-                    Tops
-                  </Link>
-                  <Link
-                    href="/account/wishlist"
-                    onClick={() => setIsMobileNavOpen(false)}
-                    className="flex items-center space-x-2.5 hover:text-black"
-                  >
-                    <Heart className="w-4 h-4 stroke-[1.5]" />
-                    <span>Wishlist</span>
-                  </Link>
+                  {navLinks.map((link) => (
+                    <Link key={link.name} href={link.href} onClick={() => setIsMobileNavOpen(false)} className="hover:text-black">
+                      {link.name}
+                    </Link>
+                  ))}
                 </nav>
               </div>
 

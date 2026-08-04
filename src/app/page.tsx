@@ -52,36 +52,69 @@ export default function HomePage() {
 
   return (
     <div className="space-y-16 pb-20 font-sans">
-      {/* 1. Hero Campaign Banner */}
-      <section className="relative w-full h-[85vh] min-h-[500px] bg-neutral-900 overflow-hidden">
-        <Image
-          src="/images/hero-portrait.jpg"
-          alt="LABEL NUVI Couple Campaign"
-          fill
-          priority
-          className="object-cover object-center brightness-90"
-        />
-        <div className="absolute inset-0 bg-grain opacity-20 pointer-events-none" />
-
-        {/* Floating Campaign Headline & CTA */}
-        <div className="absolute bottom-16 left-6 sm:left-12 text-white space-y-4 max-w-2xl">
-          {cms.heroBadge && (
-            <span className="inline-block bg-white/10 backdrop-blur-md border border-white/20 px-3.5 py-1.5 rounded-full text-[10px] font-label font-bold tracking-[0.25em] text-[#E6D5C3] uppercase">
-              {cms.heroBadge}
+      {/* 1. Hero Section */}
+      <section className="relative w-full py-20 lg:py-28 bg-[#FAF8F5] border-b border-neutral-200/60 overflow-hidden font-sans">
+        <div className="max-w-6xl mx-auto px-6 text-center space-y-8 relative z-10">
+          {/* Badge */}
+          <div>
+            <span className="inline-block bg-black text-white px-4 py-1.5 rounded-full text-[11px] font-label font-bold tracking-[0.25em] uppercase shadow-luxury-xs">
+              DESIGN SYSTEMS, FULLY AUTOMATED
             </span>
-          )}
-          <h1 className="text-3xl sm:text-5xl font-serif-luxury tracking-wider uppercase leading-tight">
-            {cms.heroTitle}
+          </div>
+
+          {/* Main Headline */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-serif-luxury font-medium tracking-tight text-neutral-900 leading-[1.1] max-w-4xl mx-auto">
+            to Land Interviews. <br className="hidden sm:inline" />
+            <span className="italic font-serif font-normal text-neutral-700">Not Guesswork.</span>
           </h1>
-          <p className="text-xs uppercase tracking-widest text-[#E6D5C3]">
-            {cms.heroSubtitle}
+
+          {/* Subtitle / Description */}
+          <p className="text-base sm:text-lg text-neutral-600 max-w-2xl mx-auto font-light leading-relaxed">
+            Your personal AI career platform that analyzes resumes, simulates hiring panels, matches job descriptions, and helps you grow into interview-ready confidence.
           </p>
-          <Link
-            href={cms.heroCtaLink || "/shop"}
-            className="inline-block bg-white text-black text-xs font-label uppercase tracking-widest px-8 py-4 font-semibold hover:bg-[#C8A46B] hover:text-white transition-all shadow-lg rounded-full"
-          >
-            {cms.heroCtaText}
-          </Link>
+
+          {/* Hero CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+            <Link
+              href="#analyze-resume"
+              className="w-full sm:w-auto bg-black text-white text-xs font-label uppercase tracking-[0.2em] px-8 py-4 font-bold rounded-full hover:bg-[#C8A46B] transition-all duration-300 shadow-luxury-sm"
+            >
+              Analyze Resume
+            </Link>
+            <Link
+              href="#see-demo"
+              className="w-full sm:w-auto bg-white border border-neutral-300 text-neutral-900 text-xs font-label uppercase tracking-[0.2em] px-8 py-4 font-bold rounded-full hover:border-black transition-all duration-300 shadow-xs"
+            >
+              See Demo
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Below Hero Trust Bar & Sub-Sentence */}
+      <section className="bg-white py-12 border-b border-neutral-200/60">
+        <div className="max-w-6xl mx-auto px-6 text-center space-y-8">
+          {/* Trust Header */}
+          <p className="text-xs font-label uppercase tracking-[0.25em] text-neutral-400 font-semibold">
+            Trusted by students targeting
+          </p>
+
+          {/* Company Badges / List */}
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 text-neutral-800 font-serif font-bold text-lg sm:text-xl tracking-wider">
+            <span className="hover:text-black transition-colors">Google</span>
+            <span className="hover:text-black transition-colors">Microsoft</span>
+            <span className="hover:text-black transition-colors">Amazon</span>
+            <span className="hover:text-black transition-colors">Adobe</span>
+            <span className="hover:text-black transition-colors">Atlassian</span>
+            <span className="hover:text-black transition-colors">Stripe</span>
+          </div>
+
+          {/* Immediately below single sentence */}
+          <div className="pt-6 border-t border-neutral-100 max-w-xl mx-auto">
+            <p className="text-base sm:text-lg text-neutral-900 font-medium tracking-tight font-serif-luxury">
+              One platform. Every stage of your career.
+            </p>
+          </div>
         </div>
       </section>
 
