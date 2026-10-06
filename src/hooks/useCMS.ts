@@ -11,12 +11,12 @@ export interface CMSData {
 }
 
 export const DEFAULT_CMS: CMSData = {
-  heroTitle: "to Land Interviews. Not Guesswork.",
-  heroSubtitle: "Your personal AI career platform that analyzes resumes, simulates hiring panels, matches job descriptions, and helps you grow into interview-ready confidence.",
-  heroBadge: "DESIGN SYSTEMS, FULLY AUTOMATED",
-  heroCtaText: "Analyze Resume",
-  heroCtaLink: "#analyze-resume",
-  announcementBar: "ONE PLATFORM. EVERY STAGE OF YOUR CAREER.",
+  heroTitle: "ATELIER DROP '26",
+  heroSubtitle: "Runway drops engineered for raw confidence.",
+  heroBadge: "ATELIER COUTURE • SPRING/SUMMER",
+  heroCtaText: "DISCOVER CATALOGUE",
+  heroCtaLink: "/shop",
+  announcementBar: "COMPLIMENTARY EXPRESS SHIPPING ON ORDERS ABOVE ₹300",
 };
 
 export function useCMS() {

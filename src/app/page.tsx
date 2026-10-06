@@ -52,70 +52,30 @@ export default function HomePage() {
 
   return (
     <div className="space-y-16 pb-20 font-sans">
-      {/* 1. Hero Section */}
-      <section className="relative w-full py-20 lg:py-28 bg-[#FAF8F5] border-b border-neutral-200/60 overflow-hidden font-sans">
-        <div className="max-w-6xl mx-auto px-6 text-center space-y-8 relative z-10">
-          {/* Badge */}
-          <div>
-            <span className="inline-block bg-black text-white px-4 py-1.5 rounded-full text-[11px] font-label font-bold tracking-[0.25em] uppercase shadow-luxury-xs">
-              DESIGN SYSTEMS, FULLY AUTOMATED
-            </span>
-          </div>
-
-          {/* Main Headline */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-serif-luxury font-medium tracking-tight text-neutral-900 leading-[1.1] max-w-4xl mx-auto">
-            to Land Interviews. <br className="hidden sm:inline" />
-            <span className="italic font-serif font-normal text-neutral-700">Not Guesswork.</span>
-          </h1>
-
-          {/* Subtitle / Description */}
-          <p className="text-base sm:text-lg text-neutral-600 max-w-2xl mx-auto font-light leading-relaxed">
-            Your personal AI career platform that analyzes resumes, simulates hiring panels, matches job descriptions, and helps you grow into interview-ready confidence.
-          </p>
-
-          {/* Hero CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <Link
-              href="#analyze-resume"
-              className="w-full sm:w-auto bg-black text-white text-xs font-label uppercase tracking-[0.2em] px-8 py-4 font-bold rounded-full hover:bg-[#C8A46B] transition-all duration-300 shadow-luxury-sm"
-            >
-              Analyze Resume
-            </Link>
-            <Link
-              href="#see-demo"
-              className="w-full sm:w-auto bg-white border border-neutral-300 text-neutral-900 text-xs font-label uppercase tracking-[0.2em] px-8 py-4 font-bold rounded-full hover:border-black transition-all duration-300 shadow-xs"
-            >
-              See Demo
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. Below Hero Trust Bar & Sub-Sentence */}
-      <section className="bg-white py-12 border-b border-neutral-200/60">
-        <div className="max-w-6xl mx-auto px-6 text-center space-y-8">
-          {/* Trust Header */}
-          <p className="text-xs font-label uppercase tracking-[0.25em] text-neutral-400 font-semibold">
-            Trusted by students targeting
-          </p>
-
-          {/* Company Badges / List */}
-          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 text-neutral-800 font-serif font-bold text-lg sm:text-xl tracking-wider">
-            <span className="hover:text-black transition-colors">Google</span>
-            <span className="hover:text-black transition-colors">Microsoft</span>
-            <span className="hover:text-black transition-colors">Amazon</span>
-            <span className="hover:text-black transition-colors">Adobe</span>
-            <span className="hover:text-black transition-colors">Atlassian</span>
-            <span className="hover:text-black transition-colors">Stripe</span>
-          </div>
-
-          {/* Immediately below single sentence */}
-          <div className="pt-6 border-t border-neutral-100 max-w-xl mx-auto">
-            <p className="text-base sm:text-lg text-neutral-900 font-medium tracking-tight font-serif-luxury">
-              One platform. Every stage of your career.
-            </p>
-          </div>
-        </div>
+      {/* 1. Hero Campaign Banner (LABEL NUVI Denim Drop) */}
+      <section className="relative w-full bg-[#E2D6C8] overflow-hidden">
+        <picture className="block w-full">
+          <source
+            media="(max-width: 767px)"
+            srcSet="/images/campaigns/denim-drop-mobile.png"
+            width={1536}
+            height={2752}
+          />
+          <source
+            media="(min-width: 768px)"
+            srcSet="/images/campaigns/denim-drop-desktop.png"
+            width={2912}
+            height={1440}
+          />
+          <img
+            src="/images/campaigns/denim-drop-desktop.png"
+            alt="LABEL NUVI Denim Drop Campaign"
+            width={2912}
+            height={1440}
+            className="w-full h-auto max-h-[85vh] object-contain md:object-cover object-center mx-auto block"
+            loading="eager"
+          />
+        </picture>
       </section>
 
       {/* 2. Latest Drop Section */}

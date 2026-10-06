@@ -594,7 +594,7 @@ export default function AdminProductsPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. satin-corset-co-ord-set-blush-pink"
+                    placeholder="e.g. azure-eclipse-co-ord-set"
                     value={slug}
                     onChange={(e) => {
                       setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));

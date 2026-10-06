@@ -36,9 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Featured Product Slugs
   const featuredProductSlugs = [
-    "royal-azure-satin-co-ord-set",
+    "azure-eclipse-co-ord-set",
     "silk-satin-corset-gown",
-    "sculptural-power-blazer",
+    "sculptural-[#1A1A1A]-power-blazer",
   ];
 
   const productSitemap: MetadataRoute.Sitemap = featuredProductSlugs.map((slug) => ({
